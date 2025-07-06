@@ -158,9 +158,7 @@ body {
 
         #touch-controls {
             display: none; /* 기본적으로 숨김 */
-            position: fixed;
-            bottom: 30px;
-            left: 30px;
+            padding: 20px 0;
             z-index: 1002;
         }
 
@@ -168,6 +166,7 @@ body {
             position: relative;
             width: 120px;
             height: 120px;
+            margin: 0 auto; /* D-pad를 중앙 정렬 */
         }
 
         .d-pad-btn {
@@ -192,7 +191,10 @@ body {
         /* 모바일 화면 대응 */
         @media (max-width: 768px) {
             body { padding: 5px; }
-            .game-container { padding: 10px; }
+            .game-container { 
+                padding: 10px; 
+                flex-grow: 1; /* 남은 공간을 차지하지 않도록 조정 */
+            }
             #stage-select h1 { font-size: 2em; }
             .stage-options { flex-direction: column; gap: 20px; }
 
