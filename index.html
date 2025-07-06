@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>걸스패닉 스타일 땅따먹기 게임</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="stage-select">
+        <h1>스테이지 선택</h1>
+        <div class="stage-options">
+            <!-- 스테이지가 여기에 동적으로 로드됩니다 -->
+        </div>
+    </div>
+
+    <div class="game-container" style="display: none;">
+        <div class="game-info">
+            <div>점유율: <span id="percentage">0%</span></div>
+            <div>생명: <span id="lives">3</span></div>
+            <div>점수: <span id="score">0</span></div>
+        </div>
+        <canvas id="gameCanvas" width="1200" height="800"></canvas>
+        <div class="controls">
+            화살표 키로 이동 • 벽을 따라 이동하여 영역을 차지하세요 • 빨간 적을 피하세요!
+        </div>
+    </div>
+
+    <div id="showtime-guide" style="display: none;">
+        화살표 키로 이미지를 탐색해보세요! (Enter: 나가기, 10초 후 자동 종료)
+    </div>
+
+    <div id="countdown" style="display: none;"></div>
+
+    <div class="game-over" id="gameOver">
+        <h2>게임 오버!</h2>
+        <p>최종 점수: <span id="finalScore">0</span></p>
+        <p>최종 점유율: <span id="finalPercentage">0%</span></p>
+        <button class="restart-btn" id="restartButton">다시 시작</button>
+    </div>
+
+    <div class="game-win" id="gameWin">
+        <h2>게임 승리!</h2>
+        <p>최종 점수: <span id="winFinalScore">0</span></p>
+        <p>최종 점유율: <span id="winFinalPercentage">0%</span></p>
+        <button class="restart-btn" id="winRestartButton">다시 시작</button>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
