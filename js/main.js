@@ -25,6 +25,8 @@ let gameState = {
     transitionStartTime: 0,
     showtimeIntervalId: null,
     showtimeCountdown: 10,
+    gameTimerId: null,
+    timeLeft: 60,
     keys: {},
     backgroundImage: null,
     currentImageSrc: null,
@@ -39,10 +41,19 @@ function initGame() {
     gameState.gameRunning = true;
     gameState.showtime = false;
     gameState.transitioningToShowtime = false;
+    
     if (gameState.showtimeIntervalId) {
         clearInterval(gameState.showtimeIntervalId);
         gameState.showtimeIntervalId = null;
     }
+    if (gameState.gameTimerId) {
+        clearInterval(gameState.gameTimerId);
+    }
+    gameState.timeLeft = 60;
+    gameState.gameTimerId = setInterval(() => {
+        gameState.timeLeft--;
+    }, 1000);
+
     gameState.keys = {};
 
     for (let x = 0; x < COLS; x++) {
@@ -77,6 +88,8 @@ function gameLoop() {
             countdownDiv.style.display = 'block';
             gameState.showtimeCountdown = 10;
             
+            if (gameState.gameTimerId) clearInterval(gameState.gameTimerId);
+            
             gameState.showtimeIntervalId = setInterval(() => {
                 gameState.showtimeCountdown--;
                 if (gameState.showtimeCountdown < 0) {
@@ -90,6 +103,10 @@ function gameLoop() {
         movePlayer(gameState);
         moveEnemies(gameState.enemies, gameState);
         checkCollisions(gameState);
+
+        if (gameState.timeLeft <= 0) {
+            gameOver(gameState);
+        }
 
         if (calculatePercentage(gameState.claimedArea) >= difficulty.WIN_PERCENTAGE) {
             gameState.gameRunning = false;
@@ -183,6 +200,10 @@ function returnToStageSelect() {
     if (gameState.showtimeIntervalId) {
         clearInterval(gameState.showtimeIntervalId);
         gameState.showtimeIntervalId = null;
+    }
+    if (gameState.gameTimerId) {
+        clearInterval(gameState.gameTimerId);
+        gameState.gameTimerId = null;
     }
 }
 

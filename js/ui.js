@@ -5,6 +5,7 @@ import { ctx, canvas } from './context.js';
 const percentageSpan = document.getElementById('percentage');
 const livesSpan = document.getElementById('lives');
 const scoreSpan = document.getElementById('score');
+const timerSpan = document.getElementById('timer');
 
 const gameOverDiv = document.getElementById('gameOver');
 const finalScoreSpan = document.getElementById('finalScore');
@@ -15,9 +16,11 @@ export function updateUI(gameState) {
     percentageSpan.textContent = calculatePercentage(gameState.claimedArea) + '%';
     livesSpan.textContent = gameState.lives;
     scoreSpan.textContent = gameState.score;
+    timerSpan.textContent = gameState.timeLeft >= 0 ? gameState.timeLeft : 0;
 }
 
 export function gameOver(gameState) {
+    if (!gameState.gameRunning) return;
     gameState.gameRunning = false;
     gameOverDiv.style.display = 'block';
     finalScoreSpan.textContent = gameState.score;
