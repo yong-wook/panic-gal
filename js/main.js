@@ -5,7 +5,7 @@ import { checkCollisions } from './collision.js';
 import { render, gameOver } from './ui.js';
 import { updateClaimedSet, calculatePercentage } from './area.js';
 import { canvas, ctx, COLS, ROWS } from './context.js';
-import { difficulty } from './difficulty.js';
+import { difficulty, ENEMY_INCREMENT, setDifficulty, resetDifficulty } from './difficulty.js';
 
 const stageSelectDiv = document.getElementById('stage-select');
 const gameContainerDiv = document.querySelector('.game-container');
@@ -30,6 +30,7 @@ let gameState = {
     keys: {},
     backgroundImage: null,
     currentImageSrc: null,
+    animationFrameId: null,
 };
 
 function initGame() {
@@ -69,6 +70,9 @@ function initGame() {
     for (let i = 0; i < difficulty.ENEMY_COUNT; i++) {
         gameState.enemies.push(createEnemy());
     }
+
+    render(gameState);
+    gameState.animationFrameId = requestAnimationFrame(gameLoop);
 }
 
 function gameLoop() {
@@ -93,7 +97,7 @@ function gameLoop() {
             gameState.showtimeIntervalId = setInterval(() => {
                 gameState.showtimeCountdown--;
                 if (gameState.showtimeCountdown < 0) {
-                    returnToStageSelect();
+                    startNextStage();
                 }
             }, 1000);
         }
@@ -118,7 +122,7 @@ function gameLoop() {
     }
     
     render(gameState);
-    requestAnimationFrame(gameLoop);
+    gameState.animationFrameId = requestAnimationFrame(gameLoop);
 }
 
 async function populateStageSelection() {
@@ -167,6 +171,11 @@ async function populateStageSelection() {
 function startGame(imageSrc) {
     stageSelectDiv.style.display = 'none';
     gameContainerDiv.style.display = 'block';
+    countdownDiv.style.display = 'none';
+
+    if (gameState.animationFrameId) {
+        cancelAnimationFrame(gameState.animationFrameId);
+    }
 
     gameState.currentImageSrc = imageSrc;
     const bgImage = new Image();
@@ -174,12 +183,44 @@ function startGame(imageSrc) {
     bgImage.onload = () => {
         gameState.backgroundImage = bgImage;
         initGame();
-        gameLoop();
     };
     bgImage.onerror = () => {
         console.error("이미지를 로드할 수 없습니다:", imageSrc);
         returnToStageSelect();
     };
+}
+
+async function startNextStage() {
+    // 1. 난이도 업데이트
+    difficulty.ENEMY_COUNT += ENEMY_INCREMENT;
+
+    // 2. 사용 가능한 스테이지 수 계산
+    let stageCount = 0;
+    let stageIndex = 1;
+    while(true) {
+        const path = `stages/${stageIndex}.jpg`;
+        try {
+            const response = await fetch(path, { method: 'HEAD' });
+            if (response.ok) {
+                stageCount++;
+                stageIndex++;
+            } else {
+                break;
+            }
+        } catch (error) {
+            break;
+        }
+    }
+
+    // 3. 랜덤 스테이지 선택 및 게임 시작
+    if (stageCount > 0) {
+        const randomStage = Math.floor(Math.random() * stageCount) + 1;
+        const path = `stages/${randomStage}.jpg`;
+        startGame(path);
+    } else {
+        // 플레이할 스테이지가 없으면, 게임 오버 또는 스테이지 선택 화면으로
+        gameOver(gameState); 
+    }
 }
 
 function returnToStageSelect() {
@@ -196,10 +237,15 @@ function returnToStageSelect() {
         clearInterval(gameState.showtimeIntervalId);
         gameState.showtimeIntervalId = null;
     }
+    if (gameState.animationFrameId) {
+        cancelAnimationFrame(gameState.animationFrameId);
+        gameState.animationFrameId = null;
+    }
     if (gameState.gameTimerId) {
         clearInterval(gameState.gameTimerId);
         gameState.gameTimerId = null;
     }
+    resetDifficulty();
 }
 
 // 스테이지 선택 이벤트 리스너 (이제 populateStageSelection에서 동적으로 생성)
@@ -211,7 +257,11 @@ restartButton.addEventListener('click', () => {
 });
 
 // 쇼타임에서 Enter 키 콜백 설정
-setEnterKeyCallback(returnToStageSelect);
+setEnterKeyCallback(startNextStage);
 
 setupInput(gameState);
 populateStageSelection(); // 페이지 로드 시 스테이지 목록 생성
+
+function getCacheBustedUrl(url) {
+    // ... existing code ...
+}
