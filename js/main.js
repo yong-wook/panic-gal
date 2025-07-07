@@ -121,43 +121,46 @@ function gameLoop() {
     requestAnimationFrame(gameLoop);
 }
 
-function getCacheBustedUrl(url) {
-    return `${url}?t=${new Date().getTime()}`;
-}
-
 async function populateStageSelection() {
     const container = document.querySelector('.stage-options');
     container.innerHTML = ''; // 기존 옵션 초기화
     let stageIndex = 1;
-    let searching = true;
+    let stageCount = 0;
 
-    while (searching) {
+    // 사용 가능한 스테이지 수를 먼저 계산합니다.
+    while (true) {
         const path = `stages/${stageIndex}.jpg`;
         try {
-            const response = await fetch(getCacheBustedUrl(path), { method: 'HEAD' });
+            const response = await fetch(path, { method: 'HEAD' });
             if (response.ok) {
-                const option = document.createElement('div');
-                option.className = 'stage-option';
-                option.setAttribute('data-image', path);
-
-                const img = document.createElement('img');
-                img.src = getCacheBustedUrl(path);
-                img.alt = `Stage ${stageIndex}`;
-
-                const span = document.createElement('span');
-                span.textContent = `스테이지 ${stageIndex}`;
-                
-                option.append(img, span);
-                option.addEventListener('click', () => startGame(path));
-                container.appendChild(option);
-
+                stageCount++;
                 stageIndex++;
             } else {
-                searching = false;
+                break; // 다음 스테이지가 없으면 중단
             }
         } catch (error) {
-            searching = false;
+            break; // 오류 발생 시 중단
         }
+    }
+
+    if (stageCount > 0) {
+        const option = document.createElement('div');
+        option.className = 'stage-option';
+
+        const questionMark = document.createElement('div');
+        questionMark.className = 'random-stage-icon';
+        questionMark.textContent = '?';
+
+        const span = document.createElement('span');
+        span.textContent = '랜덤 스테이지';
+        
+        option.append(questionMark, span);
+        option.addEventListener('click', () => {
+            const randomStage = Math.floor(Math.random() * stageCount) + 1;
+            const path = `stages/${randomStage}.jpg`;
+            startGame(path);
+        });
+        container.appendChild(option);
     }
 }
 
@@ -167,7 +170,7 @@ function startGame(imageSrc) {
 
     gameState.currentImageSrc = imageSrc;
     const bgImage = new Image();
-    bgImage.src = getCacheBustedUrl(imageSrc);
+    bgImage.src = imageSrc;
     bgImage.onload = () => {
         gameState.backgroundImage = bgImage;
         initGame();
