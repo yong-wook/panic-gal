@@ -32,6 +32,7 @@ let gameState = {
     currentImageSrc: null,
     animationFrameId: null,
     isGameOver: false,
+    forceWin: false,
 };
 
 function initGame() {
@@ -44,6 +45,7 @@ function initGame() {
     gameState.isGameOver = false;
     gameState.showtime = false;
     gameState.transitioningToShowtime = false;
+    gameState.forceWin = false;
     
     if (gameState.showtimeIntervalId) {
         clearInterval(gameState.showtimeIntervalId);
@@ -119,7 +121,7 @@ function gameLoop() {
             returnToStageSelect();
         }
 
-        if (calculatePercentage(gameState.claimedArea) >= difficulty.WIN_PERCENTAGE) {
+        if (calculatePercentage(gameState.claimedArea) >= difficulty.WIN_PERCENTAGE || gameState.forceWin) {
             gameState.gameRunning = false;
             gameState.transitioningToShowtime = true;
             gameState.transitionStartTime = Date.now();

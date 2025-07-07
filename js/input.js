@@ -9,7 +9,14 @@ export function setupInput(gameState) {
         gameState.keys[e.code] = true;
         
         if (e.code === 'Enter' && gameState.showtime) {
-            enterKeyCallback();
+            if (enterKeyCallback) {
+                enterKeyCallback();
+            }
+        }
+
+        // 테스트용 치트: Numpad+ 키로 스테이지 클리어
+        if (e.code === 'NumpadAdd') {
+            gameState.forceWin = true;
         }
     });
 
