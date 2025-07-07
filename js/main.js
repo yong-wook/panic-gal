@@ -26,7 +26,7 @@ let gameState = {
     showtimeIntervalId: null,
     showtimeCountdown: 10,
     gameTimerId: null,
-    timeLeft: 60,
+    timeLeft: 120,
     keys: {},
     backgroundImage: null,
     currentImageSrc: null,
@@ -49,7 +49,7 @@ function initGame() {
     if (gameState.gameTimerId) {
         clearInterval(gameState.gameTimerId);
     }
-    gameState.timeLeft = 60;
+    gameState.timeLeft = 120;
     gameState.gameTimerId = setInterval(() => {
         gameState.timeLeft--;
     }, 1000);
@@ -130,40 +130,32 @@ async function populateStageSelection() {
     container.innerHTML = ''; // 기존 옵션 초기화
     let stageIndex = 1;
     let searching = true;
-    const extensions = ['png', 'jpg', 'jpeg', 'gif'];
 
     while (searching) {
-        let foundPath = null;
-        for (const ext of extensions) {
-            const path = `stages/${stageIndex}.${ext}`;
-            try {
-                const response = await fetch(getCacheBustedUrl(path), { method: 'HEAD' });
-                if (response.ok) {
-                    foundPath = path;
-                    break;
-                }
-            } catch (error) { /* 무시 */ }
-        }
+        const path = `stages/${stageIndex}.jpg`;
+        try {
+            const response = await fetch(getCacheBustedUrl(path), { method: 'HEAD' });
+            if (response.ok) {
+                const option = document.createElement('div');
+                option.className = 'stage-option';
+                option.setAttribute('data-image', path);
 
-        if (foundPath) {
-            const path = foundPath;
-            const option = document.createElement('div');
-            option.className = 'stage-option';
-            option.setAttribute('data-image', path);
+                const img = document.createElement('img');
+                img.src = getCacheBustedUrl(path);
+                img.alt = `Stage ${stageIndex}`;
 
-            const img = document.createElement('img');
-            img.src = getCacheBustedUrl(path);
-            img.alt = `Stage ${stageIndex}`;
+                const span = document.createElement('span');
+                span.textContent = `스테이지 ${stageIndex}`;
+                
+                option.append(img, span);
+                option.addEventListener('click', () => startGame(path));
+                container.appendChild(option);
 
-            const span = document.createElement('span');
-            span.textContent = `스테이지 ${stageIndex}`;
-            
-            option.append(img, span);
-            option.addEventListener('click', () => startGame(path));
-            container.appendChild(option);
-
-            stageIndex++;
-        } else {
+                stageIndex++;
+            } else {
+                searching = false;
+            }
+        } catch (error) {
             searching = false;
         }
     }
