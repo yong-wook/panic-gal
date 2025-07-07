@@ -1,7 +1,21 @@
-import { gameOver } from './ui.js';
 import { GRID_SIZE } from './config.js';
 
+function handleCollision(gameState) {
+    gameState.lives--;
+    if (gameState.lives <= 0) {
+        gameState.isGameOver = true;
+    } else {
+        // Reset player trail and position after a collision
+        gameState.player.trail = [];
+        // Optionally, reset player to a safe position, e.g., top-left corner
+        gameState.player.x = 0;
+        gameState.player.y = 0;
+    }
+}
+
 export function checkCollisions(gameState) {
+    if (gameState.isGameOver) return;
+
     gameState.enemies.forEach(enemy => {
         const dx = enemy.x - gameState.player.x;
         const dy = enemy.y - gameState.player.y;
@@ -25,15 +39,4 @@ export function checkCollisions(gameState) {
             }
         });
     });
-}
-
-function handleCollision(gameState) {
-    gameState.lives--;
-    gameState.player.trail = [];
-    gameState.player.x = 0;
-    gameState.player.y = 0;
-
-    if (gameState.lives <= 0) {
-        gameOver(gameState);
-    }
 }

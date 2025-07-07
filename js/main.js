@@ -5,7 +5,7 @@ import { checkCollisions } from './collision.js';
 import { render, gameOver } from './ui.js';
 import { updateClaimedSet, calculatePercentage } from './area.js';
 import { canvas, ctx, COLS, ROWS } from './context.js';
-import { difficulty, ENEMY_INCREMENT, setDifficulty, resetDifficulty } from './difficulty.js';
+import { difficulty, ENEMY_INCREMENT, setDifficulty, resetDifficultyStats } from './difficulty.js';
 
 const stageSelectDiv = document.getElementById('stage-select');
 const gameContainerDiv = document.querySelector('.game-container');
@@ -26,11 +26,12 @@ let gameState = {
     showtimeIntervalId: null,
     showtimeCountdown: 10,
     gameTimerId: null,
-    timeLeft: 120,
+    timeLeft: 60,
     keys: {},
     backgroundImage: null,
     currentImageSrc: null,
     animationFrameId: null,
+    isGameOver: false,
 };
 
 function initGame() {
@@ -40,6 +41,7 @@ function initGame() {
     gameState.lives = difficulty.PLAYER_LIVES;
     gameState.score = 0;
     gameState.gameRunning = true;
+    gameState.isGameOver = false;
     gameState.showtime = false;
     gameState.transitioningToShowtime = false;
     
@@ -50,7 +52,7 @@ function initGame() {
     if (gameState.gameTimerId) {
         clearInterval(gameState.gameTimerId);
     }
-    gameState.timeLeft = 120;
+    gameState.timeLeft = 60;
     gameState.gameTimerId = setInterval(() => {
         gameState.timeLeft--;
     }, 1000);
@@ -108,8 +110,13 @@ function gameLoop() {
         moveEnemies(gameState.enemies, gameState);
         checkCollisions(gameState);
 
+        if (gameState.isGameOver) {
+            returnToStageSelect();
+            return; 
+        }
+
         if (gameState.timeLeft <= 0) {
-            gameOver(gameState);
+            returnToStageSelect();
         }
 
         if (calculatePercentage(gameState.claimedArea) >= difficulty.WIN_PERCENTAGE) {
@@ -245,7 +252,7 @@ function returnToStageSelect() {
         clearInterval(gameState.gameTimerId);
         gameState.gameTimerId = null;
     }
-    resetDifficulty();
+    resetDifficultyStats();
 }
 
 // 스테이지 선택 이벤트 리스너 (이제 populateStageSelection에서 동적으로 생성)

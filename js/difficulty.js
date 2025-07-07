@@ -16,7 +16,7 @@ const difficulties = {
     },
     'Hard': {
         ENEMY_COUNT: 10,
-        ENEMY_SPEED_MIN: 1,
+        ENEMY_SPEED_MIN: 1.5,
         ENEMY_SPEED_MAX: 2.5,
         PLAYER_LIVES: 2,
         WIN_PERCENTAGE: 100
@@ -39,6 +39,6 @@ export function setDifficulty(level) {
     }
 }
 
-export function resetDifficulty() {
-    setDifficulty(currentDifficulty);
+export function resetDifficultyStats() {
+    difficulty = { ...difficulties[currentDifficulty] };
 } 
