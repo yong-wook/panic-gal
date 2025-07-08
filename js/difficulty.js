@@ -17,7 +17,7 @@ const difficulties = {
     'Hard': {
         ENEMY_COUNT: 10,
         ENEMY_SPEED_MIN: 1.5,
-        ENEMY_SPEED_MAX: 2.5,
+        ENEMY_SPEED_MAX: 1.5,
         PLAYER_LIVES: 2,
         WIN_PERCENTAGE: 100
     }
