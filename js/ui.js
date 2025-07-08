@@ -11,6 +11,8 @@ const gameOverDiv = document.getElementById('gameOver');
 const finalScoreSpan = document.getElementById('finalScore');
 const finalPercentageSpan = document.getElementById('finalPercentage');
 const countdownDiv = document.getElementById('countdown');
+const stageSelectDiv = document.getElementById('stage-select');
+const gameContainerDiv = document.querySelector('.game-container');
 
 export function updateUI(gameState) {
     percentageSpan.textContent = calculatePercentage(gameState.claimedArea) + '%';
@@ -22,9 +24,53 @@ export function updateUI(gameState) {
 export function gameOver(gameState) {
     if (!gameState.gameRunning) return;
     gameState.gameRunning = false;
-    gameOverDiv.style.display = 'block';
-    finalScoreSpan.textContent = gameState.score;
-    finalPercentageSpan.textContent = calculatePercentage(gameState.claimedArea) + '%';
+    gameState.gameOverStartTime = Date.now();
+    gameState.isGameOverAnimation = true;
+    
+    // 5초 후에 게임오버 UI를 표시하고 스테이지 선택으로 돌아가기
+    setTimeout(() => {
+        gameState.isGameOverAnimation = false;
+        gameOverDiv.style.display = 'none';
+        stageSelectDiv.style.display = 'block';
+        gameContainerDiv.style.display = 'none';
+        if (gameState.animationFrameId) {
+            cancelAnimationFrame(gameState.animationFrameId);
+            gameState.animationFrameId = null;
+        }
+    }, 5000);
+}
+
+function renderGameOver(gameState) {
+    const elapsed = Date.now() - gameState.gameOverStartTime;
+    const progress = Math.min(elapsed / 5000, 1.0); // 5초 동안 진행
+
+    // 기존 게임 화면을 먼저 렌더링
+    renderGameplay(gameState);
+
+    // 화면을 점점 어둡게
+    ctx.fillStyle = `rgba(0, 0, 0, ${progress * 0.95})`;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // GAME OVER 텍스트 표시
+    const fontSize = Math.min(canvas.width / 10, 100); // 반응형 폰트 크기
+    ctx.font = `bold ${fontSize}px Arial`;
+    ctx.fillStyle = `rgba(255, 0, 0, ${Math.min(progress * 2, 1)})`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    // 텍스트에 그림자 효과 추가
+    ctx.shadowColor = 'black';
+    ctx.shadowBlur = 10;
+    ctx.shadowOffsetX = 5;
+    ctx.shadowOffsetY = 5;
+    
+    ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2);
+    
+    // 그림자 효과 초기화
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
 }
 
 function renderShowtime(gameState) {
@@ -82,11 +128,38 @@ function renderGameplay(gameState) {
         ctx.fillRect(point.x * GRID_SIZE, point.y * GRID_SIZE, GRID_SIZE, GRID_SIZE);
     });
 
-    ctx.fillStyle = '#8bc34a';
-    ctx.fillRect(gameState.player.x, gameState.player.y, 8, 8);
+    const PLAYER_VISUAL_SIZE = 16;  // 시각적 크기
+    const PLAYER_ACTUAL_SIZE = 8;   // 실제 충돌 크기
+    const PLAYER_OFFSET = (PLAYER_VISUAL_SIZE - PLAYER_ACTUAL_SIZE) / 2;  // 중앙 정렬을 위한 오프셋
 
-    ctx.fillStyle = '#f44336';
+    if (gameState.isInvincible) {
+        const blinkRate = Date.now() % 500 < 250;
+        if (blinkRate) {
+            ctx.fillStyle = '#FFD700';
+            ctx.shadowColor = '#FFD700';
+            ctx.shadowBlur = 15;  // 더 큰 발광 효과
+        } else {
+            ctx.fillStyle = '#8bc34a';
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+        }
+    } else {
+        ctx.fillStyle = '#8bc34a';
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+    }
+    
+    ctx.fillRect(
+        gameState.player.x - PLAYER_OFFSET,
+        gameState.player.y - PLAYER_OFFSET,
+        PLAYER_VISUAL_SIZE,
+        PLAYER_VISUAL_SIZE
+    );
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+
     gameState.enemies.forEach(enemy => {
+        ctx.fillStyle = enemy.color;
         ctx.beginPath();
         ctx.arc(enemy.x, enemy.y, enemy.size, 0, Math.PI * 2);
         ctx.fill();
@@ -98,7 +171,9 @@ function renderGameplay(gameState) {
 export function render(gameState) {
     if (!gameState.backgroundImage) return;
 
-    if (gameState.transitioningToShowtime) {
+    if (gameState.isGameOverAnimation) {
+        renderGameOver(gameState);
+    } else if (gameState.transitioningToShowtime) {
         renderTransition(gameState);
     } else if (gameState.showtime) {
         renderShowtime(gameState);

@@ -1,6 +1,6 @@
 import { setupInput, setEnterKeyCallback } from './input.js';
 import { movePlayer } from './player.js';
-import { createEnemy, moveEnemies } from './enemy.js';
+import { createEnemy, moveEnemies, resetBossState } from './enemy.js';
 import { checkCollisions } from './collision.js';
 import { render, gameOver } from './ui.js';
 import { updateClaimedSet, calculatePercentage } from './area.js';
@@ -30,9 +30,18 @@ let gameState = {
     keys: {},
     backgroundImage: null,
     currentImageSrc: null,
+    nextBackgroundImage: null,  // 다음 스테이지를 위해 미리 로드된 이미지
+    nextImageSrc: null,         // 다음 이미지의 경로
     animationFrameId: null,
     isGameOver: false,
     forceWin: false,
+    isInvincible: false,
+    invincibleStartTime: null,
+    invincibleDuration: 10000,
+    invincibleMessageTimer: null,
+    isGameOverAnimation: false,
+    gameOverStartTime: null,
+    stageCount: 0              // 전체 스테이지 수를 저장
 };
 
 function initGame() {
@@ -46,6 +55,16 @@ function initGame() {
     gameState.showtime = false;
     gameState.transitioningToShowtime = false;
     gameState.forceWin = false;
+    gameState.isInvincible = false;
+    gameState.invincibleStartTime = null;
+    gameState.invincibleDuration = 10000;
+    gameState.isGameOverAnimation = false;
+    gameState.gameOverStartTime = null;
+    
+    if (gameState.invincibleMessageTimer) {
+        clearTimeout(gameState.invincibleMessageTimer);
+        gameState.invincibleMessageTimer = null;
+    }
     
     if (gameState.showtimeIntervalId) {
         clearInterval(gameState.showtimeIntervalId);
@@ -80,7 +99,7 @@ function initGame() {
 }
 
 function gameLoop() {
-    if (!gameState.gameRunning && !gameState.showtime && !gameState.transitioningToShowtime) {
+    if (!gameState.gameRunning && !gameState.showtime && !gameState.transitioningToShowtime && !gameState.isGameOverAnimation) {
         return;
     }
 
@@ -112,13 +131,13 @@ function gameLoop() {
         moveEnemies(gameState.enemies, gameState);
         checkCollisions(gameState);
 
-        if (gameState.isGameOver) {
-            returnToStageSelect();
-            return; 
+        if (gameState.isGameOver && !gameState.isGameOverAnimation) {
+            gameOver(gameState);
         }
 
         if (gameState.timeLeft <= 0) {
             returnToStageSelect();
+            return;
         }
 
         if (calculatePercentage(gameState.claimedArea) >= difficulty.WIN_PERCENTAGE || gameState.forceWin) {
@@ -134,11 +153,54 @@ function gameLoop() {
     gameState.animationFrameId = requestAnimationFrame(gameLoop);
 }
 
+// 이미지를 로드하는 유틸리티 함수
+async function loadImage(src) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = getCacheBustedUrl(src);
+    });
+}
+
+// 랜덤 스테이지 번호를 얻는 함수
+function getRandomStageNumber(exclude = null) {
+    let randomStage;
+    do {
+        randomStage = Math.floor(Math.random() * gameState.stageCount) + 1;
+    } while (exclude !== null && randomStage === exclude);
+    return randomStage;
+}
+
+// 다음 스테이지 이미지를 미리 로드하는 함수
+async function preloadNextStageImage() {
+    if (!gameState.currentImageSrc) return;  // 현재 이미지가 없으면 중단
+    
+    const currentStageNumber = parseInt(gameState.currentImageSrc.match(/(\d+)\.jpg$/)[1]);
+    const nextStageNumber = getRandomStageNumber(currentStageNumber);
+    const nextImageSrc = `stages/${nextStageNumber}.jpg`;
+    
+    try {
+        gameState.nextBackgroundImage = await loadImage(nextImageSrc);
+        gameState.nextImageSrc = nextImageSrc;
+        console.log('Next stage image preloaded:', nextImageSrc);
+    } catch (error) {
+        console.error('Failed to preload next stage image:', error);
+    }
+}
+
+// 게임 초기화 시 호출
+window.onload = async function() {
+    await populateStageSelection();
+    stageSelectDiv.style.display = 'block';  // 스테이지 선택 UI를 바로 표시
+    gameContainerDiv.style.display = 'none';
+};
+
 async function populateStageSelection() {
     const container = document.querySelector('.stage-options');
     container.innerHTML = ''; // 기존 옵션 초기화
     let stageIndex = 1;
-    let stageCount = 0;
+    gameState.stageCount = 0;
 
     // 사용 가능한 스테이지 수를 먼저 계산합니다.
     while (true) {
@@ -146,17 +208,28 @@ async function populateStageSelection() {
         try {
             const response = await fetch(path, { method: 'HEAD' });
             if (response.ok) {
-                stageCount++;
+                gameState.stageCount++;
                 stageIndex++;
             } else {
-                break; // 다음 스테이지가 없으면 중단
+                break;
             }
         } catch (error) {
-            break; // 오류 발생 시 중단
+            break;
         }
     }
 
-    if (stageCount > 0) {
+    // 최초 게임 시작 시 랜덤 이미지 미리 로드
+    if (gameState.stageCount > 0) {
+        const randomStage = getRandomStageNumber();
+        const path = `stages/${randomStage}.jpg`;
+        try {
+            gameState.nextBackgroundImage = await loadImage(path);
+            gameState.nextImageSrc = path;
+            console.log('Initial stage image preloaded:', path);
+        } catch (error) {
+            console.error('Failed to preload initial stage image:', error);
+        }
+
         const option = document.createElement('div');
         option.className = 'stage-option';
 
@@ -169,9 +242,7 @@ async function populateStageSelection() {
         
         option.append(questionMark, span);
         option.addEventListener('click', () => {
-            const randomStage = Math.floor(Math.random() * stageCount) + 1;
-            const path = `stages/${randomStage}.jpg`;
-            startGame(path);
+            startGame(gameState.nextImageSrc); // 미리 로드된 이미지 사용
         });
         container.appendChild(option);
     }
@@ -186,49 +257,49 @@ function startGame(imageSrc) {
         cancelAnimationFrame(gameState.animationFrameId);
     }
 
-    gameState.currentImageSrc = imageSrc;
-    const bgImage = new Image();
-    bgImage.src = imageSrc;
-    bgImage.onload = () => {
-        gameState.backgroundImage = bgImage;
-        initGame();
-    };
-    bgImage.onerror = () => {
-        console.error("이미지를 로드할 수 없습니다:", imageSrc);
-        returnToStageSelect();
-    };
+    resetBossState();
+    resetDifficultyStats();
+
+    // 미리 로드된 이미지가 있으면 사용
+    if (gameState.nextBackgroundImage && gameState.nextImageSrc === imageSrc) {
+        gameState.backgroundImage = gameState.nextBackgroundImage;
+        gameState.currentImageSrc = imageSrc;
+    } else {
+        // 미리 로드된 이미지가 없거나 다른 이미지인 경우 새로 로드
+        const img = new Image();
+        img.onload = () => {
+            gameState.backgroundImage = img;
+            gameState.currentImageSrc = imageSrc;
+            initGame();
+        };
+        img.src = getCacheBustedUrl(imageSrc);
+        return;
+    }
+
+    // 다음 스테이지를 위한 이미지 미리 로드
+    preloadNextStageImage();
+    
+    initGame();
 }
 
 async function startNextStage() {
-    // 1. 난이도 업데이트
-    difficulty.ENEMY_COUNT += ENEMY_INCREMENT;
-
-    // 2. 사용 가능한 스테이지 수 계산
-    let stageCount = 0;
-    let stageIndex = 1;
-    while(true) {
-        const path = `stages/${stageIndex}.jpg`;
-        try {
-            const response = await fetch(path, { method: 'HEAD' });
-            if (response.ok) {
-                stageCount++;
-                stageIndex++;
-            } else {
-                break;
-            }
-        } catch (error) {
-            break;
-        }
+    if (gameState.showtimeIntervalId) {
+        clearInterval(gameState.showtimeIntervalId);
+        gameState.showtimeIntervalId = null;
     }
+    
+    showtimeGuideDiv.style.display = 'none';
+    countdownDiv.style.display = 'none';
 
-    // 3. 랜덤 스테이지 선택 및 게임 시작
-    if (stageCount > 0) {
-        const randomStage = Math.floor(Math.random() * stageCount) + 1;
-        const path = `stages/${randomStage}.jpg`;
-        startGame(path);
-    } else {
-        // 플레이할 스테이지가 없으면, 게임 오버 또는 스테이지 선택 화면으로
-        gameOver(gameState); 
+    // 미리 로드된 이미지를 현재 스테이지 이미지로 사용
+    if (gameState.nextBackgroundImage) {
+        gameState.backgroundImage = gameState.nextBackgroundImage;
+        gameState.currentImageSrc = gameState.nextImageSrc;
+        
+        // 다음 스테이지를 위한 이미지 다시 미리 로드
+        preloadNextStageImage();
+        
+        initGame();
     }
 }
 
@@ -269,8 +340,7 @@ restartButton.addEventListener('click', () => {
 setEnterKeyCallback(startNextStage);
 
 setupInput(gameState);
-populateStageSelection(); // 페이지 로드 시 스테이지 목록 생성
 
 function getCacheBustedUrl(url) {
-    // ... existing code ...
+    return `${url}?_=${Date.now()}`;
 }

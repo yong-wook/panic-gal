@@ -5,21 +5,36 @@ const difficulties = {
         ENEMY_SPEED_MIN: 1,
         ENEMY_SPEED_MAX: 2,
         PLAYER_LIVES: 3,
-        WIN_PERCENTAGE: 75
+        WIN_PERCENTAGE: 75,
+        ENEMY_TYPES: {
+            SIMPLE: 0.7,    // 70%가 단순한 적
+            NORMAL: 0.3,    // 30%가 일반 적
+            BOSS_COUNT: 1   // 보스는 1마리 고정
+        }
     },
     'Normal': {
         ENEMY_COUNT: 15,
         ENEMY_SPEED_MIN: 1.5,
         ENEMY_SPEED_MAX: 3,
         PLAYER_LIVES: 3,
-        WIN_PERCENTAGE: 80
+        WIN_PERCENTAGE: 80,
+        ENEMY_TYPES: {
+            SIMPLE: 0.6,    // 60%가 단순한 적
+            NORMAL: 0.4,    // 40%가 일반 적
+            BOSS_COUNT: 1   // 보스는 1마리 고정
+        }
     },
     'Hard': {
         ENEMY_COUNT: 10,
         ENEMY_SPEED_MIN: 1.5,
         ENEMY_SPEED_MAX: 1.5,
         PLAYER_LIVES: 2,
-        WIN_PERCENTAGE: 100
+        WIN_PERCENTAGE: 100,
+        ENEMY_TYPES: {
+            SIMPLE: 0.5,    // 50%가 단순한 적
+            NORMAL: 0.5,    // 50%가 일반 적
+            BOSS_COUNT: 1   // 보스는 1마리 고정
+        }
     }
 };
 

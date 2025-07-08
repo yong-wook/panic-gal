@@ -1,5 +1,7 @@
-import { COLS, ROWS } from './context.js';
+import { canvas, COLS, ROWS } from './context.js';
 import { GRID_SIZE, TRAPPED_AREA_THRESHOLD, TRAP_ENEMY_SCORE, TIME_BONUS_PER_TRAP } from './config.js';
+import { ENEMY_TYPE } from './enemy.js';
+import { showInvincibleMessage } from './collision.js';
 
 let claimedSet = new Set();
 
@@ -173,6 +175,17 @@ function checkTrappedEnemies(gameState) {
         gameState.claimedArea.push(...areasToClaim);
         updateClaimedSet(gameState.claimedArea);
         
+        // 제거될 적들 중에 보스가 있는지 확인
+        const hasBoss = enemiesToRemove.some(enemy => enemy.type === ENEMY_TYPE.BOSS);
+        
+        if (hasBoss) {
+            // 보스가 제거될 때 무적 상태 설정
+            gameState.isInvincible = true;
+            gameState.invincibleStartTime = Date.now();
+            gameState.invincibleDuration = 10000; // 10초
+            showInvincibleMessage();
+        }
+
         gameState.enemies = gameState.enemies.filter(e => !enemiesToRemove.includes(e));
         gameState.score += TRAP_ENEMY_SCORE * enemiesToRemove.length;
         gameState.timeLeft += TIME_BONUS_PER_TRAP * enemiesToRemove.length;
