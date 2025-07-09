@@ -180,6 +180,12 @@ body {
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: background-color 0.1s, transform 0.1s;
+        }
+
+        .d-pad-btn:active {
+            background: rgba(255, 255, 255, 0.6);
+            transform: scale(0.95);
         }
         
         #d-pad-up { top: 0; left: 63px; }

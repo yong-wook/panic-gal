@@ -36,6 +36,10 @@ export function setupInput(gameState) {
         button.addEventListener('touchstart', (e) => {
             e.preventDefault();
             gameState.keys[keyName] = true;
+            // 햅틱 피드백 추가
+            if (navigator.vibrate) {
+                navigator.vibrate(50); // 50ms 진동
+            }
         }, { passive: false });
 
         button.addEventListener('touchend', (e) => {

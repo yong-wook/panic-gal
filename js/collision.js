@@ -27,6 +27,31 @@ export function showInvincibleMessage() {
     }, 2000);
 }
 
+export function showInvincibilityEndMessage() {
+    const messageDiv = document.createElement('div');
+    messageDiv.textContent = '무적 종료!';
+    messageDiv.style.position = 'fixed';
+    messageDiv.style.top = '50%';
+    messageDiv.style.left = '50%';
+    messageDiv.style.transform = 'translate(-50%, -50%)';
+    messageDiv.style.fontSize = '24px';
+    messageDiv.style.color = '#FFFFFF'; // 흰색으로 변경
+    messageDiv.style.textShadow = '2px 2px 4px rgba(0,0,0,0.5)';
+    messageDiv.style.zIndex = '1000';
+    messageDiv.style.transition = 'opacity 0.5s';
+    messageDiv.style.opacity = '1';
+    
+    document.body.appendChild(messageDiv);
+    
+    // 2초 후에 메시지 페이드 아웃
+    setTimeout(() => {
+        messageDiv.style.opacity = '0';
+        setTimeout(() => {
+            document.body.removeChild(messageDiv);
+        }, 500);
+    }, 2000);
+}
+
 function handleCollision(gameState) {
     if (gameState.isInvincible) return; // 무적 상태면 충돌 무시
     
@@ -50,6 +75,7 @@ export function checkCollisions(gameState) {
         console.log('무적 상태 종료');
         gameState.isInvincible = false;
         gameState.invincibleStartTime = null;
+        showInvincibilityEndMessage();
     }
 
     // 보스와의 충돌 체크를 위한 배열 복사
