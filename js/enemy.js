@@ -24,15 +24,7 @@ const ENEMY_SIZES = {
     [ENEMY_TYPE.BOSS]: 15
 };
 
-let bossCreated = false; // 보스 생성 여부 추적
-
 function getRandomEnemyType() {
-    // 보스가 아직 생성되지 않았고, 보스를 생성해야 하는 경우
-    if (!bossCreated && difficulty.ENEMY_TYPES.BOSS_COUNT > 0) {
-        bossCreated = true;
-        return ENEMY_TYPE.BOSS;
-    }
-
     const rand = Math.random();
     const normalRatio = difficulty.ENEMY_TYPES.NORMAL / (difficulty.ENEMY_TYPES.SIMPLE + difficulty.ENEMY_TYPES.NORMAL);
     
@@ -45,10 +37,45 @@ export function createEnemy() {
     const angle = Math.random() * Math.PI * 2;
     const type = getRandomEnemyType();
     
-    // 보스는 더 빠르게 이동
-    const baseSpeed = type === ENEMY_TYPE.BOSS 
-        ? difficulty.ENEMY_SPEED_MAX 
-        : Math.random() * (difficulty.ENEMY_SPEED_MAX - difficulty.ENEMY_SPEED_MIN) + difficulty.ENEMY_SPEED_MIN;
+    const baseSpeed = Math.random() * (difficulty.ENEMY_SPEED_MAX - difficulty.ENEMY_SPEED_MIN) + difficulty.ENEMY_SPEED_MIN;
+    
+    return {
+        x, y,
+        vx: Math.cos(angle) * baseSpeed,
+        vy: Math.sin(angle) * baseSpeed,
+        size: ENEMY_SIZES[type],
+        color: ENEMY_COLORS[type],
+        type,
+        baseSpeed,
+        lastDirectionChange: 0
+    };
+}
+
+export function createBoss() {
+    if (difficulty.ENEMY_TYPES.BOSS_COUNT === 0) return null;
+
+    let x, y, gridX, gridY;
+    const maxTries = 100; // 무한 루프 방지를 위한 최대 시도 횟수
+
+    for (let i = 0; i < maxTries; i++) {
+        x = Math.random() * (canvas.width - 40) + 20;
+        y = Math.random() * (canvas.height - 40) + 20;
+        gridX = Math.floor(x / GRID_SIZE);
+        gridY = Math.floor(y / GRID_SIZE);
+
+        if (!isAreaClaimed(gridX, gridY)) {
+            break; // 유효한 위치를 찾았으므로 루프 종료
+        }
+
+        if (i === maxTries - 1) {
+            console.warn("보스를 생성할 안전한 위치를 찾지 못했습니다.");
+            return null; // 안전한 위치를 찾지 못하면 보스를 생성하지 않음
+        }
+    }
+
+    const angle = Math.random() * Math.PI * 2;
+    const type = ENEMY_TYPE.BOSS;
+    const baseSpeed = difficulty.ENEMY_SPEED_MAX;
     
     return {
         x, y,
@@ -178,5 +205,5 @@ export function moveEnemies(enemies, gameState) {
 
 // 새 스테이지 시작 시 보스 생성 상태 초기화
 export function resetBossState() {
-    bossCreated = false;
+    // 이 함수는 더 이상 필요하지 않지만, main.js에서 호출하고 있으므로 남겨둡니다.
 }

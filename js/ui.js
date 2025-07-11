@@ -2,7 +2,7 @@ import { calculatePercentage } from './area.js';
 import { GRID_SIZE } from './config.js';
 import { ctx, canvas } from './context.js';
 
-const percentageSpan = document.getElementById('percentage');
+const enemiesLeftSpan = document.getElementById('enemiesLeft');
 const livesSpan = document.getElementById('lives');
 const scoreSpan = document.getElementById('score');
 const timerSpan = document.getElementById('timer');
@@ -15,7 +15,7 @@ const stageSelectDiv = document.getElementById('stage-select');
 const gameContainerDiv = document.querySelector('.game-container');
 
 export function updateUI(gameState) {
-    percentageSpan.textContent = calculatePercentage(gameState.claimedArea) + '%';
+    enemiesLeftSpan.textContent = gameState.enemies.length;
     livesSpan.textContent = gameState.lives;
     scoreSpan.textContent = gameState.score;
     timerSpan.textContent = gameState.timeLeft >= 0 ? gameState.timeLeft : 0;
@@ -180,4 +180,28 @@ export function render(gameState) {
     } else if (gameState.gameRunning) {
         renderGameplay(gameState);
     }
+}
+
+// 보스 등장 메시지 표시
+export function showBossMessage() {
+    const messageDiv = document.createElement('div');
+    messageDiv.id = 'boss-message';
+    messageDiv.textContent = '보스 등장!';
+    document.body.appendChild(messageDiv);
+
+    setTimeout(() => {
+        messageDiv.remove();
+    }, 3000); // 3초 후 메시지 제거
+}
+
+// 무적 상태 메시지 표시
+export function showInvincibleMessage() {
+    const messageDiv = document.createElement('div');
+    messageDiv.id = 'invincible-message';
+    messageDiv.textContent = '10초간 무적!';
+    document.body.appendChild(messageDiv);
+
+    setTimeout(() => {
+        messageDiv.remove();
+    }, 3000); // 3초 후 메시지 제거
 }

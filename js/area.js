@@ -135,6 +135,7 @@ export function claimArea(gameState) {
     gameState.player.trail = [];
     gameState.score += 100 * (foundRegions.length > 0 ? foundRegions[0].length : 0);
     checkTrappedEnemies(gameState);
+    checkAndRemoveStuckEnemies(gameState);
 }
 
 function checkTrappedEnemies(gameState) {
@@ -259,4 +260,46 @@ export function calculatePercentage(claimedArea) {
     if (availableCells <= 0) return 100; // Avoid division by zero or negative available cells
 
     return Math.round((playerClaimedCells / availableCells) * 100);
+}
+
+function checkAndRemoveStuckEnemies(gameState) {
+    const enemiesToRemove = [];
+    const areasToClaim = [];
+    const checkedAreas = new Set();
+
+    gameState.enemies.forEach(enemy => {
+        const startX = Math.floor(enemy.x / GRID_SIZE);
+        const startY = Math.floor(enemy.y / GRID_SIZE);
+        const startKey = `${startX},${startY}`;
+
+        if (isAreaClaimed(startX, startY) || checkedAreas.has(startKey)) {
+            return;
+        }
+
+        const { area, enclosedEnemies } = findPocketDetails(startX, startY, gameState.enemies);
+
+        enclosedEnemies.forEach(e => {
+            const key = `${Math.floor(e.x / GRID_SIZE)},${Math.floor(e.y / GRID_SIZE)}`;
+            checkedAreas.add(key);
+        });
+
+        // 갇힌 영역의 크기가 매우 작거나, 해당 영역에 플레이어가 접근할 수 없는 경우
+        if (area.length < 10) { // 임계값 10은 예시이며, 필요에 따라 조정 가능
+            areasToClaim.push(...area);
+            enclosedEnemies.forEach(e => {
+                if (!enemiesToRemove.includes(e)) {
+                    enemiesToRemove.push(e);
+                }
+            });
+        }
+    });
+
+    if (enemiesToRemove.length > 0) {
+        gameState.claimedArea.push(...areasToClaim);
+        updateClaimedSet(gameState.claimedArea);
+
+        gameState.enemies = gameState.enemies.filter(e => !enemiesToRemove.includes(e));
+        gameState.score += TRAP_ENEMY_SCORE * enemiesToRemove.length;
+        gameState.timeLeft += TIME_BONUS_PER_TRAP * enemiesToRemove.length;
+    }
 }
