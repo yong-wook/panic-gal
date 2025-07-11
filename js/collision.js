@@ -1,6 +1,7 @@
-import { GRID_SIZE } from './config.js';
+import { GRID_SIZE, ITEM_SIZE } from './config.js';
 import { ENEMY_TYPE } from './enemy.js';
 import { isAreaClaimed } from './area.js';
+import { applySpeedUpEffect } from './main.js';
 
 export function showInvincibleMessage() {
     const messageDiv = document.createElement('div');
@@ -108,5 +109,35 @@ export function checkCollisions(gameState) {
                 }
             }
         });
+    }
+
+    // 아이템과의 충돌 체크
+    checkItemCollision(gameState);
+}
+
+function checkItemCollision(gameState) {
+    if (!gameState.speedUpItem) return; // 아이템이 없으면 체크하지 않음
+
+    const item = gameState.speedUpItem;
+    const player = gameState.player;
+
+    // 플레이어와 아이템의 충돌 범위 계산
+    const playerLeft = player.x;
+    const playerRight = player.x + 8; // 플레이어 크기 8x8
+    const playerTop = player.y;
+    const playerBottom = player.y + 8;
+
+    const itemLeft = item.x - item.size / 2;
+    const itemRight = item.x + item.size / 2;
+    const itemTop = item.y - item.size / 2;
+    const itemBottom = item.y + item.size / 2;
+
+    // 충돌 감지 (AABB 충돌)
+    if (playerRight > itemLeft && playerLeft < itemRight &&
+        playerBottom > itemTop && playerTop < itemBottom) {
+        
+        // 아이템 획득
+        gameState.speedUpItem = null; // 아이템 제거
+        applySpeedUpEffect(gameState); // 효과 적용
     }
 }

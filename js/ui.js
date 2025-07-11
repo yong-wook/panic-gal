@@ -1,5 +1,5 @@
 import { calculatePercentage } from './area.js';
-import { GRID_SIZE } from './config.js';
+import { GRID_SIZE, ITEM_SIZE, ITEM_COLOR, ITEM_TEXT_COLOR, ITEM_FONT } from './config.js';
 import { ctx, canvas } from './context.js';
 
 const enemiesLeftSpan = document.getElementById('enemiesLeft');
@@ -166,6 +166,27 @@ function renderGameplay(gameState) {
     });
 
     updateUI(gameState);
+
+    // 아이템 렌더링
+    if (gameState.speedUpItem) {
+        ctx.fillStyle = ITEM_COLOR;
+        ctx.fillRect(
+            gameState.speedUpItem.x - gameState.speedUpItem.size / 2,
+            gameState.speedUpItem.y - gameState.speedUpItem.size / 2,
+            gameState.speedUpItem.size,
+            gameState.speedUpItem.size
+        );
+
+        ctx.fillStyle = ITEM_TEXT_COLOR;
+        ctx.font = ITEM_FONT;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(
+            gameState.speedUpItem.text,
+            gameState.speedUpItem.x,
+            gameState.speedUpItem.y
+        );
+    }
 }
 
 export function render(gameState) {

@@ -1,4 +1,4 @@
-import { PLAYER_SPEED, GRID_SIZE } from './config.js';
+import { PLAYER_SPEED, GRID_SIZE, SPEED_UP_MULTIPLIER } from './config.js';
 import { claimArea, isAreaClaimed } from './area.js';
 import { canvas, COLS, ROWS } from './context.js';
 
@@ -27,12 +27,18 @@ function isPlayerInSafeArea(player) {
 }
 
 export function movePlayer(gameState) {
+    const { player, keys } = gameState;
+    let dx = 0;
+    let dy = 0;
+
+    const currentPlayerSpeed = gameState.isPlayerSpeedBoosted ? PLAYER_SPEED * SPEED_UP_MULTIPLIER : PLAYER_SPEED;
+
     if (gameState.showtime) {
         // 쇼타임 모드: 플레이어는 배경 이미지를 패닝합니다.
-        if (gameState.keys['ArrowLeft']) gameState.player.x -= PLAYER_SPEED * 8;
-        if (gameState.keys['ArrowRight']) gameState.player.x += PLAYER_SPEED * 8;
-        if (gameState.keys['ArrowUp']) gameState.player.y -= PLAYER_SPEED * 8;
-        if (gameState.keys['ArrowDown']) gameState.player.y += PLAYER_SPEED * 8;
+        if (gameState.keys['ArrowLeft']) gameState.player.x -= currentPlayerSpeed * 8;
+        if (gameState.keys['ArrowRight']) gameState.player.x += currentPlayerSpeed * 8;
+        if (gameState.keys['ArrowUp']) gameState.player.y -= currentPlayerSpeed * 8;
+        if (gameState.keys['ArrowDown']) gameState.player.y += currentPlayerSpeed * 8;
 
         // 플레이어 위치를 이미지 경계 내로 제한합니다.
         const halfWidth = canvas.width / 2;
@@ -49,10 +55,10 @@ export function movePlayer(gameState) {
     // 이전 프레임에서의 안전 영역 여부
     const wasInSafeArea = isPlayerInSafeArea({ x: oldX, y: oldY });
 
-    if (gameState.keys['ArrowLeft']) gameState.player.x -= PLAYER_SPEED;
-    if (gameState.keys['ArrowRight']) gameState.player.x += PLAYER_SPEED;
-    if (gameState.keys['ArrowUp']) gameState.player.y -= PLAYER_SPEED;
-    if (gameState.keys['ArrowDown']) gameState.player.y += PLAYER_SPEED;
+    if (gameState.keys['ArrowLeft']) gameState.player.x -= currentPlayerSpeed;
+    if (gameState.keys['ArrowRight']) gameState.player.x += currentPlayerSpeed;
+    if (gameState.keys['ArrowUp']) gameState.player.y -= currentPlayerSpeed;
+    if (gameState.keys['ArrowDown']) gameState.player.y += currentPlayerSpeed;
 
     // 캔버스 경계 내에 플레이어 위치 유지
     gameState.player.x = Math.max(0, Math.min(canvas.width - 8, gameState.player.x));

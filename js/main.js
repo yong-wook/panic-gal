@@ -3,9 +3,10 @@ import { movePlayer } from './player.js';
 import { createEnemy, createBoss, moveEnemies, resetBossState } from './enemy.js';
 import { checkCollisions } from './collision.js';
 import { render, gameOver, showBossMessage } from './ui.js';
-import { updateClaimedSet } from './area.js';
+import { updateClaimedSet, isAreaClaimed } from './area.js';
 import { canvas, ctx, COLS, ROWS } from './context.js';
 import { difficulty, ENEMY_INCREMENT, setDifficulty, resetDifficultyStats } from './difficulty.js';
+import { ITEM_SPAWN_INTERVAL, ITEM_SIZE, GRID_SIZE, SPEED_UP_DURATION } from './config.js';
 
 const stageSelectDiv = document.getElementById('stage-select');
 const gameContainerDiv = document.querySelector('.game-container');
@@ -44,7 +45,11 @@ let gameState = {
     gameOverStartTime: null,
     stageCount: 0,              // 전체 스테이지 수를 저장
     bossSpawned: false,
-    stageStartTime: 60
+    stageStartTime: 60,
+    speedUpItem: null,
+    speedUpSpawnTimerId: null,
+    speedUpEffectTimerId: null,
+    isPlayerSpeedBoosted: false
 };
 
 function initGame() {
@@ -68,6 +73,17 @@ function initGame() {
     gameState.isGameOverAnimation = false;
     gameState.gameOverStartTime = null;
     gameState.bossSpawned = false;
+    gameState.speedUpItem = null;
+    gameState.isPlayerSpeedBoosted = false;
+
+    if (gameState.speedUpSpawnTimerId) {
+        clearInterval(gameState.speedUpSpawnTimerId);
+        gameState.speedUpSpawnTimerId = null;
+    }
+    if (gameState.speedUpEffectTimerId) {
+        clearTimeout(gameState.speedUpEffectTimerId);
+        gameState.speedUpEffectTimerId = null;
+    }
     
     if (gameState.invincibleMessageTimer) {
         clearTimeout(gameState.invincibleMessageTimer);
@@ -115,6 +131,13 @@ function initGame() {
     for (let i = 0; i < difficulty.ENEMY_COUNT; i++) {
         gameState.enemies.push(createEnemy());
     }
+
+    // 아이템 생성 타이머 시작
+    gameState.speedUpSpawnTimerId = setInterval(() => {
+        if (gameState.gameRunning && !gameState.speedUpItem) {
+            spawnSpeedUpItem(gameState);
+        }
+    }, ITEM_SPAWN_INTERVAL);
 
     render(gameState);
     gameState.animationFrameId = requestAnimationFrame(gameLoop);
@@ -369,4 +392,47 @@ setupInput(gameState);
 
 function getCacheBustedUrl(url) {
     return `${url}?_=${Date.now()}`;
+}
+
+function spawnSpeedUpItem(gameState) {
+    let x, y, gridX, gridY;
+    const maxTries = 100; // 무한 루프 방지를 위한 최대 시도 횟수
+
+    for (let i = 0; i < maxTries; i++) {
+        x = Math.random() * (canvas.width - ITEM_SIZE) + ITEM_SIZE / 2;
+        y = Math.random() * (canvas.height - ITEM_SIZE) + ITEM_SIZE / 2;
+        gridX = Math.floor(x / GRID_SIZE);
+        gridY = Math.floor(y / GRID_SIZE);
+
+        // 점령되지 않은 영역에만 생성
+        if (!isAreaClaimed(gridX, gridY)) {
+            gameState.speedUpItem = {
+                x: x,
+                y: y,
+                size: ITEM_SIZE,
+                text: "Speed Up"
+            };
+            return;
+        }
+    }
+    console.warn("아이템을 생성할 안전한 위치를 찾지 못했습니다.");
+}
+
+export function applySpeedUpEffect(gameState) {
+    gameState.isPlayerSpeedBoosted = true;
+    // 플레이어 속도 조절은 player.js에서 담당
+
+    // 기존 타이머가 있다면 클리어
+    if (gameState.speedUpEffectTimerId) {
+        clearTimeout(gameState.speedUpEffectTimerId);
+    }
+
+    gameState.speedUpEffectTimerId = setTimeout(() => {
+        resetSpeedUpEffect(gameState);
+    }, SPEED_UP_DURATION);
+}
+
+function resetSpeedUpEffect(gameState) {
+    gameState.isPlayerSpeedBoosted = false;
+    gameState.speedUpEffectTimerId = null;
 }
