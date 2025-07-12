@@ -1,7 +1,7 @@
 import { canvas, COLS, ROWS } from './context.js';
 import { GRID_SIZE, TRAPPED_AREA_THRESHOLD, TRAP_ENEMY_SCORE, TIME_BONUS_PER_TRAP } from './config.js';
 import { ENEMY_TYPE } from './enemy.js';
-import { showInvincibleMessage } from './ui.js';
+import { showInvincibleMessage, showEnemyDefeatedMessage } from './ui.js';
 
 let claimedSet = new Set();
 
@@ -190,6 +190,7 @@ function checkTrappedEnemies(gameState) {
         gameState.enemies = gameState.enemies.filter(e => !enemiesToRemove.includes(e));
         gameState.score += TRAP_ENEMY_SCORE * enemiesToRemove.length;
         gameState.timeLeft += TIME_BONUS_PER_TRAP * enemiesToRemove.length;
+        showEnemyDefeatedMessage(); // 적 처치 메시지 표시
     }
 }
 
@@ -301,5 +302,6 @@ function checkAndRemoveStuckEnemies(gameState) {
         gameState.enemies = gameState.enemies.filter(e => !enemiesToRemove.includes(e));
         gameState.score += TRAP_ENEMY_SCORE * enemiesToRemove.length;
         gameState.timeLeft += TIME_BONUS_PER_TRAP * enemiesToRemove.length;
+        showEnemyDefeatedMessage(); // 적 처치 메시지 표시
     }
 }

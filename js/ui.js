@@ -17,6 +17,19 @@ const countdownDiv = document.getElementById('countdown');
 const stageSelectDiv = document.getElementById('stage-select');
 const gameContainerDiv = document.querySelector('.game-container');
 
+const tauntMessages = [
+    "고작 한 마리 가지고 우쭐대기는...",
+    "그 속도로 잡다간 내일 클리어 하겠네",
+    "너무 느리잖아? 거북이도 너보단 빠르겠다.",
+    "에게, 겨우 한 마리?",
+    "넌 가망이 없어보이네",
+    "이봐, 잠 오는 속도잖아.",
+    "그 실력으로 괜찮겠어?",
+    "한 마리 잡고 좋아하는 거 아니지?",
+    "이 정도는 튜토리얼 수준이라고.",
+    "그러다 정신 못차리고 게임오버 된다."
+];
+
 export function updateUI(gameState) {
     enemiesLeftSpan.textContent = gameState.enemies.length;
     livesSpan.textContent = gameState.lives;
@@ -340,5 +353,32 @@ export function showBossMessage() {
     setTimeout(() => {
         messageDiv.remove();
     }, 3000); // 3초 후 메시지 제거
+}
+
+export function showEnemyDefeatedMessage() {
+    const messageDiv = document.createElement('div');
+    const randomMessage = tauntMessages[Math.floor(Math.random() * tauntMessages.length)];
+    messageDiv.textContent = randomMessage;
+    messageDiv.style.position = 'fixed';
+    messageDiv.style.top = '50%';
+    messageDiv.style.left = '50%';
+    messageDiv.style.transform = 'translate(-50%, -50%)';
+    messageDiv.style.fontSize = '36px';
+    messageDiv.style.color = '#FF0000'; // 도발 멘트는 빨간색으로
+    messageDiv.style.textShadow = '2px 2px 4px rgba(0,0,0,0.5)';
+    messageDiv.style.zIndex = '1000';
+    messageDiv.style.opacity = '1';
+    messageDiv.style.transition = 'opacity 0.5s, transform 0.5s';
+    
+    document.body.appendChild(messageDiv);
+    
+    // 1초 후에 메시지 페이드 아웃 및 위로 이동
+    setTimeout(() => {
+        messageDiv.style.opacity = '0';
+        messageDiv.style.transform = 'translate(-50%, -70%)';
+        setTimeout(() => {
+            document.body.removeChild(messageDiv);
+        }, 500); // transition 시간과 일치
+    }, 1000);
 }
 
