@@ -210,7 +210,9 @@ function renderMinimap(gameState) {
 
     // 미니맵 배경 (전체 가상 세계)
     if (gameState.backgroundImage) {
+        minimapCtx.filter = 'invert(1)'; // 네거티브 효과 적용
         minimapCtx.drawImage(gameState.backgroundImage, 0, 0, VIRTUAL_WORLD_WIDTH, VIRTUAL_WORLD_HEIGHT, 0, 0, minimapCanvas.width, minimapCanvas.height);
+        minimapCtx.filter = 'none'; // 필터 초기화
     }
 
     // 미니맵에 점령된 영역 표시

@@ -26,12 +26,10 @@ body {
         }
 
         #minimapCanvas {
-            position: absolute;
-            top: 20px;
-            right: 20px;
             border: 2px solid #fff;
             background: rgba(0, 0, 0, 0.5);
             z-index: 999;
+            margin-top: 10px; /* 게임 캔버스 아래에 여백 추가 */
         }
 
         .game-info {

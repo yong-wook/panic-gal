@@ -235,10 +235,20 @@ async function loadImage(src) {
     return new Promise((resolve, reject) => {
         const img = new Image();
         img.onload = () => {
-            // 이미지의 실제 크기를 가상 세계 크기로 설정
-            img.width = VIRTUAL_WORLD_WIDTH;
-            img.height = VIRTUAL_WORLD_HEIGHT;
-            resolve(img);
+            // 임시 캔버스를 생성하여 이미지 리사이즈
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCanvas.width = VIRTUAL_WORLD_WIDTH;
+            tempCanvas.height = VIRTUAL_WORLD_HEIGHT;
+            tempCtx.drawImage(img, 0, 0, VIRTUAL_WORLD_WIDTH, VIRTUAL_WORLD_HEIGHT);
+
+            // 리사이즈된 이미지를 새로운 Image 객체로 변환
+            const resizedImg = new Image();
+            resizedImg.onload = () => {
+                resolve(resizedImg);
+            };
+            resizedImg.onerror = reject;
+            resizedImg.src = tempCanvas.toDataURL(); // 캔버스 내용을 Data URL로 변환
         };
         img.onerror = reject;
         img.src = getCacheBustedUrl(src);
