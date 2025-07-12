@@ -30,6 +30,17 @@ const tauntMessages = [
     "그러다 정신 못차리고 게임오버 된다."
 ];
 
+const lifeLostMessages = [
+    "역시 네가 그러면 그렇지.",
+    "꼴 좋군.",
+    "어때, 내 공격은 좀 아플걸?",
+    "정신 똑바로 차리는 게 좋을 거야.",
+    "이 정도에 당황하면 곤란한데.",
+    "아직 시작도 안 했어.",
+    "실망스러운 움직임이군.",
+    "그렇게 해서 날 이길 수 있겠어?"
+];
+
 export function updateUI(gameState) {
     enemiesLeftSpan.textContent = gameState.enemies.length;
     livesSpan.textContent = gameState.lives;
@@ -365,6 +376,33 @@ export function showEnemyDefeatedMessage() {
     messageDiv.style.transform = 'translate(-50%, -50%)';
     messageDiv.style.fontSize = '36px';
     messageDiv.style.color = '#FF0000'; // 도발 멘트는 빨간색으로
+    messageDiv.style.textShadow = '2px 2px 4px rgba(0,0,0,0.5)';
+    messageDiv.style.zIndex = '1000';
+    messageDiv.style.opacity = '1';
+    messageDiv.style.transition = 'opacity 0.5s, transform 0.5s';
+    
+    document.body.appendChild(messageDiv);
+    
+    // 1초 후에 메시지 페이드 아웃 및 위로 이동
+    setTimeout(() => {
+        messageDiv.style.opacity = '0';
+        messageDiv.style.transform = 'translate(-50%, -70%)';
+        setTimeout(() => {
+            document.body.removeChild(messageDiv);
+        }, 500); // transition 시간과 일치
+    }, 1000);
+}
+
+export function showLifeLostMessage() {
+    const messageDiv = document.createElement('div');
+    const randomMessage = lifeLostMessages[Math.floor(Math.random() * lifeLostMessages.length)];
+    messageDiv.textContent = randomMessage;
+    messageDiv.style.position = 'fixed';
+    messageDiv.style.top = '60%'; // 적 처치 메시지와 겹치지 않도록 위치 조정
+    messageDiv.style.left = '50%';
+    messageDiv.style.transform = 'translate(-50%, -50%)';
+    messageDiv.style.fontSize = '32px'; // 폰트 크기 약간 작게
+    messageDiv.style.color = '#FFFF00'; // 생명력 감소 멘트는 노란색으로
     messageDiv.style.textShadow = '2px 2px 4px rgba(0,0,0,0.5)';
     messageDiv.style.zIndex = '1000';
     messageDiv.style.opacity = '1';

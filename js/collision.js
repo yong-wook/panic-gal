@@ -2,12 +2,13 @@ import { GRID_SIZE, ITEM_SIZE, PLAYER_SIZE } from './config.js';
 import { ENEMY_TYPE } from './enemy.js';
 import { isAreaClaimed } from './area.js';
 import { applySpeedUpEffect } from './main.js';
-import { showInvincibleMessage, showInvincibilityEndMessage } from './ui.js';
+import { showInvincibleMessage, showInvincibilityEndMessage, showLifeLostMessage } from './ui.js';
 
 function handleCollision(gameState) {
     if (gameState.isInvincible) return; // 무적 상태면 충돌 무시
     
     gameState.lives--;
+    showLifeLostMessage(); // 생명력 감소 메시지 표시
     if (gameState.lives <= 0) {
         gameState.isGameOver = true;
     } else {
