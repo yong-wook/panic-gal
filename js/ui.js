@@ -200,6 +200,56 @@ export function render(gameState) {
     }
 }
 
+export function showInvincibleMessage() {
+    const messageDiv = document.createElement('div');
+    messageDiv.textContent = '10초 무적!';
+    messageDiv.style.position = 'fixed';
+    messageDiv.style.top = '50%';
+    messageDiv.style.left = '50%';
+    messageDiv.style.transform = 'translate(-50%, -50%)';
+    messageDiv.style.fontSize = '24px';
+    messageDiv.style.color = '#FFD700';
+    messageDiv.style.textShadow = '2px 2px 4px rgba(0,0,0,0.5)';
+    messageDiv.style.zIndex = '1000';
+    messageDiv.style.transition = 'opacity 0.5s';
+    messageDiv.style.opacity = '1';
+    
+    document.body.appendChild(messageDiv);
+    
+    // 2초 후에 메시지 페이드 아웃
+    setTimeout(() => {
+        messageDiv.style.opacity = '0';
+        setTimeout(() => {
+            document.body.removeChild(messageDiv);
+        }, 500);
+    }, 2000);
+}
+
+export function showInvincibilityEndMessage() {
+    const messageDiv = document.createElement('div');
+    messageDiv.textContent = '무적 종료!';
+    messageDiv.style.position = 'fixed';
+    messageDiv.style.top = '50%';
+    messageDiv.style.left = '50%';
+    messageDiv.style.transform = 'translate(-50%, -50%)';
+    messageDiv.style.fontSize = '24px';
+    messageDiv.style.color = '#FFFFFF'; // 흰색으로 변경
+    messageDiv.style.textShadow = '2px 2px 4px rgba(0,0,0,0.5)';
+    messageDiv.style.zIndex = '1000';
+    messageDiv.style.transition = 'opacity 0.5s';
+    messageDiv.style.opacity = '1';
+    
+    document.body.appendChild(messageDiv);
+    
+    // 2초 후에 메시지 페이드 아웃
+    setTimeout(() => {
+        messageDiv.style.opacity = '0';
+        setTimeout(() => {
+            document.body.removeChild(messageDiv);
+        }, 500);
+    }, 2000);
+}
+
 // 보스 등장 메시지 표시
 export function showBossMessage() {
     const messageDiv = document.createElement('div');

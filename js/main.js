@@ -2,7 +2,7 @@ import { setupInput, setEnterKeyCallback } from './input.js';
 import { movePlayer } from './player.js';
 import { createEnemy, createBoss, moveEnemies, resetBossState } from './enemy.js';
 import { checkCollisions } from './collision.js';
-import { render, gameOver, showBossMessage } from './ui.js';
+import { render, gameOver, showBossMessage, showInvincibleMessage, showInvincibilityEndMessage } from './ui.js';
 import { updateClaimedSet, isAreaClaimed } from './area.js';
 import { canvas, ctx, COLS, ROWS } from './context.js';
 import { difficulty, ENEMY_INCREMENT, setDifficulty, resetDifficultyStats } from './difficulty.js';

@@ -1,7 +1,4 @@
-게임판 확대 및 카메라 이동 기능 구현
+메시지 함수 ui.js로 이동 및 충돌 로직 개선
 
-- 가상 게임 세계 크기 설정 (현재 캔버스 크기의 4배)
-- 플레이어 및 적 크기 2배 확대
-- GRID_SIZE 2배 확대
-- 플레이어 위치에 따라 카메라가 동적으로 이동하도록 구현
-- 모든 렌더링 로직에 카메라 좌표 적용
+- collision.js에 있던 showInvincibleMessage와 showInvincibilityEndMessage 함수를 ui.js로 이동
+- collision.js에서 PLAYER_SIZE 상수를 사용하여 충돌 로직 개선

@@ -1,57 +1,8 @@
-import { GRID_SIZE, ITEM_SIZE } from './config.js';
+import { GRID_SIZE, ITEM_SIZE, PLAYER_SIZE } from './config.js';
 import { ENEMY_TYPE } from './enemy.js';
 import { isAreaClaimed } from './area.js';
 import { applySpeedUpEffect } from './main.js';
-
-export function showInvincibleMessage() {
-    const messageDiv = document.createElement('div');
-    messageDiv.textContent = '10초 무적!';
-    messageDiv.style.position = 'fixed';
-    messageDiv.style.top = '50%';
-    messageDiv.style.left = '50%';
-    messageDiv.style.transform = 'translate(-50%, -50%)';
-    messageDiv.style.fontSize = '24px';
-    messageDiv.style.color = '#FFD700';
-    messageDiv.style.textShadow = '2px 2px 4px rgba(0,0,0,0.5)';
-    messageDiv.style.zIndex = '1000';
-    messageDiv.style.transition = 'opacity 0.5s';
-    messageDiv.style.opacity = '1';
-    
-    document.body.appendChild(messageDiv);
-    
-    // 2초 후에 메시지 페이드 아웃
-    setTimeout(() => {
-        messageDiv.style.opacity = '0';
-        setTimeout(() => {
-            document.body.removeChild(messageDiv);
-        }, 500);
-    }, 2000);
-}
-
-export function showInvincibilityEndMessage() {
-    const messageDiv = document.createElement('div');
-    messageDiv.textContent = '무적 종료!';
-    messageDiv.style.position = 'fixed';
-    messageDiv.style.top = '50%';
-    messageDiv.style.left = '50%';
-    messageDiv.style.transform = 'translate(-50%, -50%)';
-    messageDiv.style.fontSize = '24px';
-    messageDiv.style.color = '#FFFFFF'; // 흰색으로 변경
-    messageDiv.style.textShadow = '2px 2px 4px rgba(0,0,0,0.5)';
-    messageDiv.style.zIndex = '1000';
-    messageDiv.style.transition = 'opacity 0.5s';
-    messageDiv.style.opacity = '1';
-    
-    document.body.appendChild(messageDiv);
-    
-    // 2초 후에 메시지 페이드 아웃
-    setTimeout(() => {
-        messageDiv.style.opacity = '0';
-        setTimeout(() => {
-            document.body.removeChild(messageDiv);
-        }, 500);
-    }, 2000);
-}
+import { showInvincibleMessage, showInvincibilityEndMessage } from './ui.js';
 
 function handleCollision(gameState) {
     if (gameState.isInvincible) return; // 무적 상태면 충돌 무시
@@ -123,9 +74,9 @@ function checkItemCollision(gameState) {
 
     // 플레이어와 아이템의 충돌 범위 계산
     const playerLeft = player.x;
-    const playerRight = player.x + 8; // 플레이어 크기 8x8
+    const playerRight = player.x + PLAYER_SIZE;
     const playerTop = player.y;
-    const playerBottom = player.y + 8;
+    const playerBottom = player.y + PLAYER_SIZE;
 
     const itemLeft = item.x - item.size / 2;
     const itemRight = item.x + item.size / 2;
