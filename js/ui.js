@@ -2,6 +2,9 @@ import { calculatePercentage } from './area.js';
 import { GRID_SIZE, ITEM_SIZE, ITEM_COLOR, ITEM_TEXT_COLOR, ITEM_FONT, PLAYER_SIZE, VIRTUAL_WORLD_WIDTH, VIRTUAL_WORLD_HEIGHT } from './config.js';
 import { ctx, canvas } from './context.js';
 
+const minimapCanvas = document.getElementById('minimapCanvas');
+const minimapCtx = minimapCanvas.getContext('2d');
+
 const enemiesLeftSpan = document.getElementById('enemiesLeft');
 const livesSpan = document.getElementById('lives');
 const scoreSpan = document.getElementById('score');
@@ -197,7 +200,55 @@ export function render(gameState) {
         renderShowtime(gameState);
     } else if (gameState.gameRunning) {
         renderGameplay(gameState);
+        renderMinimap(gameState);
     }
+}
+
+    }
+}
+
+function renderMinimap(gameState) {
+    minimapCtx.clearRect(0, 0, minimapCanvas.width, minimapCanvas.height);
+
+    // 미니맵 배경 (전체 가상 세계)
+    if (gameState.backgroundImage) {
+        minimapCtx.drawImage(gameState.backgroundImage, 0, 0, VIRTUAL_WORLD_WIDTH, VIRTUAL_WORLD_HEIGHT, 0, 0, minimapCanvas.width, minimapCanvas.height);
+    }
+
+    // 미니맵에 점령된 영역 표시
+    minimapCtx.fillStyle = 'rgba(255, 255, 0, 0.5)'; // 노란색 반투명
+    gameState.claimedArea.forEach(area => {
+        const miniX = (area.x * GRID_SIZE / VIRTUAL_WORLD_WIDTH) * minimapCanvas.width;
+        const miniY = (area.y * GRID_SIZE / VIRTUAL_WORLD_HEIGHT) * minimapCanvas.height;
+        const miniSizeX = (GRID_SIZE / VIRTUAL_WORLD_WIDTH) * minimapCanvas.width;
+        const miniSizeY = (GRID_SIZE / VIRTUAL_WORLD_HEIGHT) * minimapCanvas.height;
+        minimapCtx.fillRect(miniX, miniY, miniSizeX, miniSizeY);
+    });
+
+    // 미니맵에 플레이어 위치 표시
+    minimapCtx.fillStyle = 'blue';
+    const playerMiniX = (gameState.player.x / VIRTUAL_WORLD_WIDTH) * minimapCanvas.width;
+    const playerMiniY = (gameState.player.y / VIRTUAL_WORLD_HEIGHT) * minimapCanvas.height;
+    minimapCtx.fillRect(playerMiniX, playerMiniY, 5, 5); // 플레이어는 작은 사각형으로 표시
+
+    // 미니맵에 적 위치 표시
+    gameState.enemies.forEach(enemy => {
+        minimapCtx.fillStyle = enemy.color;
+        const enemyMiniX = (enemy.x / VIRTUAL_WORLD_WIDTH) * minimapCanvas.width;
+        const enemyMiniY = (enemy.y / VIRTUAL_WORLD_HEIGHT) * minimapCanvas.height;
+        minimapCtx.beginPath();
+        minimapCtx.arc(enemyMiniX, enemyMiniY, 3, 0, Math.PI * 2); // 적은 작은 원으로 표시
+        minimapCtx.fill();
+    });
+
+    // 현재 카메라 뷰포트 표시
+    minimapCtx.strokeStyle = 'red';
+    minimapCtx.lineWidth = 1;
+    const viewX = (gameState.cameraX / VIRTUAL_WORLD_WIDTH) * minimapCanvas.width;
+    const viewY = (gameState.cameraY / VIRTUAL_WORLD_HEIGHT) * minimapCanvas.height;
+    const viewWidth = (gameState.cameraWidth / VIRTUAL_WORLD_WIDTH) * minimapCanvas.width;
+    const viewHeight = (gameState.cameraHeight / VIRTUAL_WORLD_HEIGHT) * minimapCanvas.height;
+    minimapCtx.strokeRect(viewX, viewY, viewWidth, viewHeight);
 }
 
 export function showInvincibleMessage() {
@@ -262,14 +313,3 @@ export function showBossMessage() {
     }, 3000); // 3초 후 메시지 제거
 }
 
-// 무적 상태 메시지 표시
-export function showInvincibleMessage() {
-    const messageDiv = document.createElement('div');
-    messageDiv.id = 'invincible-message';
-    messageDiv.textContent = '10초간 무적!';
-    document.body.appendChild(messageDiv);
-
-    setTimeout(() => {
-        messageDiv.remove();
-    }, 3000); // 3초 후 메시지 제거
-}

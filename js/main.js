@@ -61,7 +61,7 @@ function initGame() {
         cancelAnimationFrame(gameState.animationFrameId);
     }
 
-    gameState.player = { x: VIRTUAL_WORLD_WIDTH / 2, y: VIRTUAL_WORLD_HEIGHT / 2, trail: [] };
+    gameState.player = { x: 0, y: 0, trail: [] };
     gameState.enemies = [];
     gameState.claimedArea = [];
     gameState.lives = difficulty.PLAYER_LIVES;

@@ -1,7 +1,7 @@
 import { canvas, COLS, ROWS } from './context.js';
 import { GRID_SIZE, TRAPPED_AREA_THRESHOLD, TRAP_ENEMY_SCORE, TIME_BONUS_PER_TRAP } from './config.js';
 import { ENEMY_TYPE } from './enemy.js';
-import { showInvincibleMessage } from './collision.js';
+import { showInvincibleMessage } from './ui.js';
 
 let claimedSet = new Set();
 

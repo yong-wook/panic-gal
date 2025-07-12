@@ -1,4 +1,6 @@
-메시지 함수 ui.js로 이동 및 충돌 로직 개선
+플레이어 시작 위치 변경 및 미니맵 구현
 
-- collision.js에 있던 showInvincibleMessage와 showInvincibilityEndMessage 함수를 ui.js로 이동
-- collision.js에서 PLAYER_SIZE 상수를 사용하여 충돌 로직 개선
+- 플레이어 시작 위치를 안전 지대(0,0)으로 변경
+- index.html에 미니맵 캔버스 추가
+- style.css에 미니맵 스타일 추가
+- ui.js에 미니맵 렌더링 로직 추가 (배경, 플레이어, 적, 카메라 뷰포트 표시)
