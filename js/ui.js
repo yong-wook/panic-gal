@@ -204,8 +204,6 @@ export function render(gameState) {
     }
 }
 
-    }
-}
 
 function renderMinimap(gameState) {
     minimapCtx.clearRect(0, 0, minimapCanvas.width, minimapCanvas.height);
