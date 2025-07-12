@@ -148,7 +148,7 @@ function renderGameplay(gameState) {
         ctx.rect(area.x * GRID_SIZE - gameState.cameraX, area.y * GRID_SIZE - gameState.cameraY, GRID_SIZE, GRID_SIZE);
     });
     ctx.clip();
-    ctx.filter = 'blur(5px)';
+    ctx.filter = 'blur(10px)'; // 흐린 정도를 두 배로 증가
     ctx.drawImage(gameState.backgroundImage, gameState.cameraX, gameState.cameraY, gameState.cameraWidth, gameState.cameraHeight, 0, 0, canvas.width, canvas.height);
     ctx.restore();
 
