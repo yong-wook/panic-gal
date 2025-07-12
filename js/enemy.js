@@ -1,6 +1,6 @@
 import { canvas, COLS, ROWS } from './context.js';
 import { isAreaClaimed } from './area.js';
-import { GRID_SIZE } from './config.js';
+import { GRID_SIZE, VIRTUAL_WORLD_WIDTH, VIRTUAL_WORLD_HEIGHT } from './config.js';
 import { difficulty } from './difficulty.js';
 
 // 적 타입 상수 정의
@@ -19,9 +19,9 @@ const ENEMY_COLORS = {
 
 // 적 타입별 크기 정의
 const ENEMY_SIZES = {
-    [ENEMY_TYPE.SIMPLE]: 8,
-    [ENEMY_TYPE.NORMAL]: 10,
-    [ENEMY_TYPE.BOSS]: 15
+    [ENEMY_TYPE.SIMPLE]: 16,
+    [ENEMY_TYPE.NORMAL]: 20,
+    [ENEMY_TYPE.BOSS]: 30
 };
 
 function getRandomEnemyType() {
@@ -32,8 +32,8 @@ function getRandomEnemyType() {
 }
 
 export function createEnemy() {
-    const x = Math.random() * (canvas.width - 40) + 20;
-    const y = Math.random() * (canvas.height - 40) + 20;
+    const x = Math.random() * (VIRTUAL_WORLD_WIDTH - 40) + 20;
+    const y = Math.random() * (VIRTUAL_WORLD_HEIGHT - 40) + 20;
     const angle = Math.random() * Math.PI * 2;
     const type = getRandomEnemyType();
     
@@ -58,8 +58,8 @@ export function createBoss() {
     const maxTries = 100; // 무한 루프 방지를 위한 최대 시도 횟수
 
     for (let i = 0; i < maxTries; i++) {
-        x = Math.random() * (canvas.width - 40) + 20;
-        y = Math.random() * (canvas.height - 40) + 20;
+        x = Math.random() * (VIRTUAL_WORLD_WIDTH - 40) + 20;
+        y = Math.random() * (VIRTUAL_WORLD_HEIGHT - 40) + 20;
         gridX = Math.floor(x / GRID_SIZE);
         gridY = Math.floor(y / GRID_SIZE);
 
@@ -155,11 +155,11 @@ export function moveEnemies(enemies, gameState) {
         let { nextX, nextY } = nextPosition;
 
         // 벽 충돌 감지
-        if (nextX <= enemy.size || nextX >= canvas.width - enemy.size) {
+        if (nextX <= enemy.size || nextX >= VIRTUAL_WORLD_WIDTH - enemy.size) {
             enemy.vx = -enemy.vx;
             nextX = enemy.x + enemy.vx;
         }
-        if (nextY <= enemy.size || nextY >= canvas.height - enemy.size) {
+        if (nextY <= enemy.size || nextY >= VIRTUAL_WORLD_HEIGHT - enemy.size) {
             enemy.vy = -enemy.vy;
             nextY = enemy.y + enemy.vy;
         }
@@ -198,8 +198,8 @@ export function moveEnemies(enemies, gameState) {
         }
 
         // 경계선 내 위치 조정
-        enemy.x = Math.max(enemy.size, Math.min(canvas.width - enemy.size, enemy.x));
-        enemy.y = Math.max(enemy.size, Math.min(canvas.height - enemy.size, enemy.y));
+        enemy.x = Math.max(enemy.size, Math.min(VIRTUAL_WORLD_WIDTH - enemy.size, enemy.x));
+        enemy.y = Math.max(enemy.size, Math.min(VIRTUAL_WORLD_HEIGHT - enemy.size, enemy.y));
     });
 }
 

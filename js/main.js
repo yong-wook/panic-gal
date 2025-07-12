@@ -6,7 +6,7 @@ import { render, gameOver, showBossMessage } from './ui.js';
 import { updateClaimedSet, isAreaClaimed } from './area.js';
 import { canvas, ctx, COLS, ROWS } from './context.js';
 import { difficulty, ENEMY_INCREMENT, setDifficulty, resetDifficultyStats } from './difficulty.js';
-import { ITEM_SPAWN_INTERVAL, ITEM_SIZE, GRID_SIZE, SPEED_UP_DURATION } from './config.js';
+import { ITEM_SPAWN_INTERVAL, ITEM_SIZE, GRID_SIZE, SPEED_UP_DURATION, VIRTUAL_WORLD_WIDTH, VIRTUAL_WORLD_HEIGHT, PLAYER_SIZE } from './config.js';
 
 const stageSelectDiv = document.getElementById('stage-select');
 const gameContainerDiv = document.querySelector('.game-container');
@@ -49,7 +49,11 @@ let gameState = {
     speedUpItem: null,
     speedUpSpawnTimerId: null,
     speedUpEffectTimerId: null,
-    isPlayerSpeedBoosted: false
+    isPlayerSpeedBoosted: false,
+    cameraX: 0,
+    cameraY: 0,
+    cameraWidth: canvas.width,
+    cameraHeight: canvas.height
 };
 
 function initGame() {
@@ -57,7 +61,7 @@ function initGame() {
         cancelAnimationFrame(gameState.animationFrameId);
     }
 
-    gameState.player = { x: 0, y: 0, trail: [] };
+    gameState.player = { x: VIRTUAL_WORLD_WIDTH / 2, y: VIRTUAL_WORLD_HEIGHT / 2, trail: [] };
     gameState.enemies = [];
     gameState.claimedArea = [];
     gameState.lives = difficulty.PLAYER_LIVES;
@@ -75,6 +79,8 @@ function initGame() {
     gameState.bossSpawned = false;
     gameState.speedUpItem = null;
     gameState.isPlayerSpeedBoosted = false;
+    gameState.cameraX = gameState.player.x - gameState.cameraWidth / 2;
+    gameState.cameraY = gameState.player.y - gameState.cameraHeight / 2;
 
     if (gameState.speedUpSpawnTimerId) {
         clearInterval(gameState.speedUpSpawnTimerId);
@@ -143,6 +149,32 @@ function initGame() {
     gameState.animationFrameId = requestAnimationFrame(gameLoop);
 }
 
+function updateCameraPosition(gameState) {
+    const { player, cameraWidth, cameraHeight } = gameState;
+    const cameraDeadZoneX = cameraWidth * 0.2; // 화면 너비의 20% 데드존
+    const cameraDeadZoneY = cameraHeight * 0.2; // 화면 높이의 20% 데드존
+
+    // 플레이어가 화면 중앙에서 벗어나면 카메라 이동
+    const playerScreenX = player.x - gameState.cameraX;
+    const playerScreenY = player.y - gameState.cameraY;
+
+    if (playerScreenX < cameraDeadZoneX) {
+        gameState.cameraX = player.x - cameraDeadZoneX;
+    } else if (playerScreenX > cameraWidth - cameraDeadZoneX) {
+        gameState.cameraX = player.x - (cameraWidth - cameraDeadZoneX);
+    }
+
+    if (playerScreenY < cameraDeadZoneY) {
+        gameState.cameraY = player.y - cameraDeadZoneY;
+    } else if (playerScreenY > cameraHeight - cameraDeadZoneY) {
+        gameState.cameraY = player.y - (cameraHeight - cameraDeadZoneY);
+    }
+
+    // 카메라가 가상 세계 경계를 벗어나지 않도록 제한
+    gameState.cameraX = Math.max(0, Math.min(VIRTUAL_WORLD_WIDTH - cameraWidth, gameState.cameraX));
+    gameState.cameraY = Math.max(0, Math.min(VIRTUAL_WORLD_HEIGHT - cameraHeight, gameState.cameraY));
+}
+
 function gameLoop() {
     if (!gameState.gameRunning && !gameState.showtime && !gameState.transitioningToShowtime && !gameState.isGameOverAnimation) {
         return;
@@ -173,6 +205,7 @@ function gameLoop() {
         movePlayer(gameState);
     } else if (gameState.gameRunning) {
         movePlayer(gameState);
+        updateCameraPosition(gameState); // 카메라 위치 업데이트
         moveEnemies(gameState.enemies, gameState);
         checkCollisions(gameState);
 
@@ -201,7 +234,12 @@ function gameLoop() {
 async function loadImage(src) {
     return new Promise((resolve, reject) => {
         const img = new Image();
-        img.onload = () => resolve(img);
+        img.onload = () => {
+            // 이미지의 실제 크기를 가상 세계 크기로 설정
+            img.width = VIRTUAL_WORLD_WIDTH;
+            img.height = VIRTUAL_WORLD_HEIGHT;
+            resolve(img);
+        };
         img.onerror = reject;
         img.src = getCacheBustedUrl(src);
     });

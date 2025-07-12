@@ -1,5 +1,5 @@
 import { calculatePercentage } from './area.js';
-import { GRID_SIZE, ITEM_SIZE, ITEM_COLOR, ITEM_TEXT_COLOR, ITEM_FONT } from './config.js';
+import { GRID_SIZE, ITEM_SIZE, ITEM_COLOR, ITEM_TEXT_COLOR, ITEM_FONT, PLAYER_SIZE, VIRTUAL_WORLD_WIDTH, VIRTUAL_WORLD_HEIGHT } from './config.js';
 import { ctx, canvas } from './context.js';
 
 const enemiesLeftSpan = document.getElementById('enemiesLeft');
@@ -76,11 +76,8 @@ function renderGameOver(gameState) {
 function renderShowtime(gameState) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    const halfWidth = canvas.width / 2;
-    const halfHeight = canvas.height / 2;
-
-    const sx = gameState.player.x - halfWidth;
-    const sy = gameState.player.y - halfHeight;
+    const sx = gameState.player.x - canvas.width / 2;
+    const sy = gameState.player.y - canvas.height / 2;
 
     ctx.drawImage(gameState.backgroundImage, sx, sy, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
 
@@ -102,7 +99,7 @@ function renderTransition(gameState) {
     ctx.translate(-canvas.width / 2, -canvas.height / 2);
     
     ctx.filter = `blur(${blurValue}px)`;
-    ctx.drawImage(gameState.backgroundImage, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(gameState.backgroundImage, gameState.cameraX, gameState.cameraY, gameState.cameraWidth, gameState.cameraHeight, 0, 0, canvas.width, canvas.height);
     
     ctx.restore();
 }
@@ -110,26 +107,26 @@ function renderTransition(gameState) {
 function renderGameplay(gameState) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.filter = 'invert(1) grayscale(1) brightness(0.5) blur(2px)';
-    ctx.drawImage(gameState.backgroundImage, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(gameState.backgroundImage, gameState.cameraX, gameState.cameraY, gameState.cameraWidth, gameState.cameraHeight, 0, 0, canvas.width, canvas.height);
     ctx.filter = 'none';
 
     ctx.save();
     ctx.beginPath();
     gameState.claimedArea.forEach(area => {
-        ctx.rect(area.x * GRID_SIZE, area.y * GRID_SIZE, GRID_SIZE, GRID_SIZE);
+        ctx.rect(area.x * GRID_SIZE - gameState.cameraX, area.y * GRID_SIZE - gameState.cameraY, GRID_SIZE, GRID_SIZE);
     });
     ctx.clip();
     ctx.filter = 'blur(5px)';
-    ctx.drawImage(gameState.backgroundImage, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(gameState.backgroundImage, gameState.cameraX, gameState.cameraY, gameState.cameraWidth, gameState.cameraHeight, 0, 0, canvas.width, canvas.height);
     ctx.restore();
 
     ctx.fillStyle = '#ffeb3b';
     gameState.player.trail.forEach(point => {
-        ctx.fillRect(point.x * GRID_SIZE, point.y * GRID_SIZE, GRID_SIZE, GRID_SIZE);
+        ctx.fillRect(point.x * GRID_SIZE - gameState.cameraX, point.y * GRID_SIZE - gameState.cameraY, GRID_SIZE, GRID_SIZE);
     });
 
-    const PLAYER_VISUAL_SIZE = 16;  // 시각적 크기
-    const PLAYER_ACTUAL_SIZE = 8;   // 실제 충돌 크기
+    const PLAYER_VISUAL_SIZE = PLAYER_SIZE;  // 시각적 크기
+    const PLAYER_ACTUAL_SIZE = PLAYER_SIZE;   // 실제 충돌 크기
     const PLAYER_OFFSET = (PLAYER_VISUAL_SIZE - PLAYER_ACTUAL_SIZE) / 2;  // 중앙 정렬을 위한 오프셋
 
     if (gameState.isInvincible) {
@@ -150,8 +147,8 @@ function renderGameplay(gameState) {
     }
     
     ctx.fillRect(
-        gameState.player.x - PLAYER_OFFSET,
-        gameState.player.y - PLAYER_OFFSET,
+        gameState.player.x - PLAYER_OFFSET - gameState.cameraX,
+        gameState.player.y - PLAYER_OFFSET - gameState.cameraY,
         PLAYER_VISUAL_SIZE,
         PLAYER_VISUAL_SIZE
     );
@@ -161,7 +158,7 @@ function renderGameplay(gameState) {
     gameState.enemies.forEach(enemy => {
         ctx.fillStyle = enemy.color;
         ctx.beginPath();
-        ctx.arc(enemy.x, enemy.y, enemy.size, 0, Math.PI * 2);
+        ctx.arc(enemy.x - gameState.cameraX, enemy.y - gameState.cameraY, enemy.size, 0, Math.PI * 2);
         ctx.fill();
     });
 
@@ -171,8 +168,8 @@ function renderGameplay(gameState) {
     if (gameState.speedUpItem) {
         ctx.fillStyle = ITEM_COLOR;
         ctx.fillRect(
-            gameState.speedUpItem.x - gameState.speedUpItem.size / 2,
-            gameState.speedUpItem.y - gameState.speedUpItem.size / 2,
+            gameState.speedUpItem.x - gameState.speedUpItem.size / 2 - gameState.cameraX,
+            gameState.speedUpItem.y - gameState.speedUpItem.size / 2 - gameState.cameraY,
             gameState.speedUpItem.size,
             gameState.speedUpItem.size
         );
@@ -183,8 +180,8 @@ function renderGameplay(gameState) {
         ctx.textBaseline = 'middle';
         ctx.fillText(
             gameState.speedUpItem.text,
-            gameState.speedUpItem.x,
-            gameState.speedUpItem.y
+            gameState.speedUpItem.x - gameState.cameraX,
+            gameState.speedUpItem.y - gameState.cameraY
         );
     }
 }

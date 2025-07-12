@@ -1,4 +1,4 @@
-import { PLAYER_SPEED, GRID_SIZE, SPEED_UP_MULTIPLIER } from './config.js';
+import { PLAYER_SPEED, GRID_SIZE, SPEED_UP_MULTIPLIER, PLAYER_SIZE, VIRTUAL_WORLD_WIDTH, VIRTUAL_WORLD_HEIGHT } from './config.js';
 import { claimArea, isAreaClaimed } from './area.js';
 import { canvas, COLS, ROWS } from './context.js';
 
@@ -11,9 +11,9 @@ function isPlayerInSafeArea(player) {
     // 플레이어의 네 꼭짓점 좌표
     const corners = [
         { x: player.x, y: player.y }, // Top-left
-        { x: player.x + 7, y: player.y }, // Top-right (플레이어 크기 8x8)
-        { x: player.x, y: player.y + 7 }, // Bottom-left
-        { x: player.x + 7, y: player.y + 7 } // Bottom-right
+        { x: player.x + PLAYER_SIZE - 1, y: player.y }, // Top-right
+        { x: player.x, y: player.y + PLAYER_SIZE - 1 }, // Bottom-left
+        { x: player.x + PLAYER_SIZE - 1, y: player.y + PLAYER_SIZE - 1 } // Bottom-right
     ];
 
     for (const corner of corners) {
@@ -41,11 +41,11 @@ export function movePlayer(gameState) {
         if (gameState.keys['ArrowDown']) gameState.player.y += currentPlayerSpeed * 8;
 
         // 플레이어 위치를 이미지 경계 내로 제한합니다.
-        const halfWidth = canvas.width / 2;
-        const halfHeight = canvas.height / 2;
+        const halfCanvasWidth = canvas.width / 2;
+        const halfCanvasHeight = canvas.height / 2;
 
-        gameState.player.x = Math.max(halfWidth, Math.min(gameState.backgroundImage.width - halfWidth, gameState.player.x));
-        gameState.player.y = Math.max(halfHeight, Math.min(gameState.backgroundImage.height - halfHeight, gameState.player.y));
+        gameState.player.x = Math.max(halfCanvasWidth, Math.min(VIRTUAL_WORLD_WIDTH - halfCanvasWidth, gameState.player.x));
+        gameState.player.y = Math.max(halfCanvasHeight, Math.min(VIRTUAL_WORLD_HEIGHT - halfCanvasHeight, gameState.player.y));
         return;
     }
 
@@ -60,9 +60,9 @@ export function movePlayer(gameState) {
     if (gameState.keys['ArrowUp']) gameState.player.y -= currentPlayerSpeed;
     if (gameState.keys['ArrowDown']) gameState.player.y += currentPlayerSpeed;
 
-    // 캔버스 경계 내에 플레이어 위치 유지
-    gameState.player.x = Math.max(0, Math.min(canvas.width - 8, gameState.player.x));
-    gameState.player.y = Math.max(0, Math.min(canvas.height - 8, gameState.player.y));
+    // 가상 세계 경계 내에 플레이어 위치 유지
+    gameState.player.x = Math.max(0, Math.min(VIRTUAL_WORLD_WIDTH - PLAYER_SIZE, gameState.player.x));
+    gameState.player.y = Math.max(0, Math.min(VIRTUAL_WORLD_HEIGHT - PLAYER_SIZE, gameState.player.y));
 
     // 플레이어가 이동했을 때만 트레일 추가 또는 영역 점유 시도
     if (oldX !== gameState.player.x || oldY !== gameState.player.y) {
@@ -71,22 +71,21 @@ export function movePlayer(gameState) {
         if (!isInSafeArea) {
             // 안전 영역 밖에 있을 때만 트레일 추가
             // 플레이어의 중심점을 기준으로 그리드 좌표 계산
-            let gridX = Math.floor((gameState.player.x + 4) / GRID_SIZE);
-            let gridY = Math.floor((gameState.player.y + 4) / GRID_SIZE);
+            let gridX = Math.floor((gameState.player.x + PLAYER_SIZE / 2) / GRID_SIZE);
+            let gridY = Math.floor((gameState.player.y + PLAYER_SIZE / 2) / GRID_SIZE);
 
-            // Adjust gridX/gridY if player is at the very edge of the canvas
-            // This ensures the trail reaches the actual border cells (COLS-1, ROWS-1)
-            if (gameState.player.x + 8 >= canvas.width) { 
+            // Adjust gridX/gridY if player is at the very edge of the virtual world
+            if (gameState.player.x + PLAYER_SIZE >= VIRTUAL_WORLD_WIDTH) { 
                 gridX = COLS - 1;
             }
-            if (gameState.player.y + 8 >= canvas.height) { 
+            if (gameState.player.y + PLAYER_SIZE >= VIRTUAL_WORLD_HEIGHT) { 
                 gridY = ROWS - 1;
             }
 
             // 플레이어가 안전 영역에서 벗어나는 첫 지점이라면, 이전 안전 영역의 그리드 셀을 트레일에 추가
             if (wasInSafeArea && !gameState.player.trail.length) {
-                const oldGridX = Math.floor((oldX + 4) / GRID_SIZE);
-                const oldGridY = Math.floor((oldY + 4) / GRID_SIZE);
+                const oldGridX = Math.floor((oldX + PLAYER_SIZE / 2) / GRID_SIZE);
+                const oldGridY = Math.floor((oldY + PLAYER_SIZE / 2) / GRID_SIZE);
                 gameState.player.trail.push({ x: oldGridX, y: oldGridY });
             }
 
@@ -95,8 +94,8 @@ export function movePlayer(gameState) {
             }
         } else if (gameState.player.trail.length > 0) {
             // 안전 영역으로 돌아왔고 트레일이 있을 경우, 현재 위치를 트레일에 추가하여 연결 완성
-            const currentGridX = Math.floor((gameState.player.x + 4) / GRID_SIZE);
-            const currentGridY = Math.floor((gameState.player.y + 4) / GRID_SIZE);
+            const currentGridX = Math.floor((gameState.player.x + PLAYER_SIZE / 2) / GRID_SIZE);
+            const currentGridY = Math.floor((gameState.player.y + PLAYER_SIZE / 2) / GRID_SIZE);
             if (!gameState.player.trail.find(t => t.x === currentGridX && t.y === currentGridY)) {
                 gameState.player.trail.push({ x: currentGridX, y: currentGridY });
             }
