@@ -79,30 +79,59 @@ function renderGameOver(gameState) {
 function renderShowtime(gameState) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    const sx = gameState.player.x - canvas.width / 2;
-    const sy = gameState.player.y - canvas.height / 2;
+    // 원본 이미지를 사용하고 카메라 로직 적용
+    if (gameState.originalBackgroundImage) {
+        ctx.drawImage(
+            gameState.originalBackgroundImage,
+            gameState.cameraX,
+            gameState.cameraY,
+            gameState.cameraWidth,
+            gameState.cameraHeight,
+            0,
+            0,
+            canvas.width,
+            canvas.height
+        );
+    }
 
-    ctx.drawImage(gameState.backgroundImage, sx, sy, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
+    // 플레이어 렌더링 (쇼타임에서는 플레이어가 원본 이미지 위를 움직임)
+    ctx.fillStyle = '#8bc34a';
+    ctx.fillRect(
+        gameState.player.x - gameState.cameraX,
+        gameState.player.y - gameState.cameraY,
+        PLAYER_SIZE,
+        PLAYER_SIZE
+    );
 
     countdownDiv.textContent = gameState.showtimeCountdown >= 0 ? gameState.showtimeCountdown : '';
 }
 
 function renderTransition(gameState) {
     const elapsed = Date.now() - gameState.transitionStartTime;
-    const progress = Math.min(elapsed / 5000, 1.0);
+    const progress = Math.min(elapsed / 5000, 1.0); // 5초 동안 진행
 
+    // 블러 값: 5px에서 0px으로 감소
     const blurValue = 5 * (1 - progress);
-    const scaleValue = 1 + 0.2 * progress;
+    // 스케일 값: 캔버스에 꽉 차는 크기에서 1.05배까지 확대
+    const initialScale = Math.max(canvas.width / gameState.backgroundImage.width, canvas.height / gameState.backgroundImage.height);
+    const targetScale = 1.05; // 최종적으로 약간 확대된 상태
+    const scaleValue = initialScale + (targetScale - initialScale) * progress;
+
+    // 밝기 및 대비: 0.5에서 1.0으로 증가 (흐림 -> 선명)
+    const brightnessValue = 0.5 + 0.5 * progress;
+    const contrastValue = 0.5 + 0.5 * progress;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.save();
     
-    ctx.translate(canvas.width / 2, canvas.height / 2);
-    ctx.scale(scaleValue, scaleValue);
-    ctx.translate(-canvas.width / 2, -canvas.height / 2);
-    
-    ctx.filter = `blur(${blurValue}px)`;
-    ctx.drawImage(gameState.backgroundImage, gameState.cameraX, gameState.cameraY, gameState.cameraWidth, gameState.cameraHeight, 0, 0, canvas.width, canvas.height);
+    // 이미지 중앙 정렬을 위한 translate
+    const imgWidth = gameState.backgroundImage.width * scaleValue;
+    const imgHeight = gameState.backgroundImage.height * scaleValue;
+    const dx = (canvas.width - imgWidth) / 2;
+    const dy = (canvas.height - imgHeight) / 2;
+
+    ctx.filter = `blur(${blurValue}px) brightness(${brightnessValue}) contrast(${contrastValue})`;
+    ctx.drawImage(gameState.backgroundImage, dx, dy, imgWidth, imgHeight);
     
     ctx.restore();
 }

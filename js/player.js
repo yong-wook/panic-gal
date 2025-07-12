@@ -44,8 +44,8 @@ export function movePlayer(gameState) {
         const halfCanvasWidth = canvas.width / 2;
         const halfCanvasHeight = canvas.height / 2;
 
-        gameState.player.x = Math.max(halfCanvasWidth, Math.min(VIRTUAL_WORLD_WIDTH - halfCanvasWidth, gameState.player.x));
-        gameState.player.y = Math.max(halfCanvasHeight, Math.min(VIRTUAL_WORLD_HEIGHT - halfCanvasHeight, gameState.player.y));
+        gameState.player.x = Math.max(halfCanvasWidth, Math.min(gameState.currentWorldWidth - halfCanvasWidth, gameState.player.x));
+        gameState.player.y = Math.max(halfCanvasHeight, Math.min(gameState.currentWorldHeight - halfCanvasHeight, gameState.player.y));
         return;
     }
 

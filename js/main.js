@@ -30,8 +30,10 @@ let gameState = {
     timeLeft: 60,
     keys: {},
     backgroundImage: null,
+    originalBackgroundImage: null, // 원본 크기 배경 이미지
     currentImageSrc: null,
-    nextBackgroundImage: null,  // 다음 스테이지를 위해 미리 로드된 이미지
+    nextBackgroundImage: null,  // 다음 스테이지를 위해 미리 로드된 이미지 (리사이즈된 버전)
+    nextOriginalBackgroundImage: null, // 다음 스테이지를 위해 미리 로드된 원본 이미지
     nextImageSrc: null,         // 다음 이미지의 경로
     animationFrameId: null,
     isGameOver: false,
@@ -45,7 +47,7 @@ let gameState = {
     gameOverStartTime: null,
     stageCount: 0,              // 전체 스테이지 수를 저장
     bossSpawned: false,
-    stageStartTime: 60,
+    stageStartTime: 120,
     speedUpItem: null,
     speedUpSpawnTimerId: null,
     speedUpEffectTimerId: null,
@@ -53,7 +55,9 @@ let gameState = {
     cameraX: 0,
     cameraY: 0,
     cameraWidth: canvas.width,
-    cameraHeight: canvas.height
+    cameraHeight: canvas.height,
+    currentWorldWidth: VIRTUAL_WORLD_WIDTH, // 현재 게임 세계의 너비
+    currentWorldHeight: VIRTUAL_WORLD_HEIGHT // 현재 게임 세계의 높이
 };
 
 function initGame() {
@@ -81,6 +85,10 @@ function initGame() {
     gameState.isPlayerSpeedBoosted = false;
     gameState.cameraX = gameState.player.x - gameState.cameraWidth / 2;
     gameState.cameraY = gameState.player.y - gameState.cameraHeight / 2;
+    gameState.cameraWidth = canvas.width; // 카메라 너비를 캔버스 너비로 초기화
+    gameState.cameraHeight = canvas.height; // 카메라 높이를 캔버스 높이로 초기화
+    gameState.currentWorldWidth = VIRTUAL_WORLD_WIDTH;
+    gameState.currentWorldHeight = VIRTUAL_WORLD_HEIGHT;
 
     if (gameState.speedUpSpawnTimerId) {
         clearInterval(gameState.speedUpSpawnTimerId);
@@ -112,7 +120,7 @@ function initGame() {
         if (!gameState.gameRunning) return; // 게임이 실행 중이 아닐 경우 아무것도 하지 않음
 
         gameState.timeLeft--;
-        if (gameState.timeLeft === 30 && !gameState.bossSpawned) {
+        if (gameState.timeLeft === 60 && !gameState.bossSpawned) {
             const boss = createBoss();
             if (boss) {
                 gameState.enemies.push(boss);
@@ -171,8 +179,8 @@ function updateCameraPosition(gameState) {
     }
 
     // 카메라가 가상 세계 경계를 벗어나지 않도록 제한
-    gameState.cameraX = Math.max(0, Math.min(VIRTUAL_WORLD_WIDTH - cameraWidth, gameState.cameraX));
-    gameState.cameraY = Math.max(0, Math.min(VIRTUAL_WORLD_HEIGHT - cameraHeight, gameState.cameraY));
+    gameState.cameraX = Math.max(0, Math.min(gameState.currentWorldWidth - cameraWidth, gameState.cameraX));
+    gameState.cameraY = Math.max(0, Math.min(gameState.currentWorldHeight - cameraHeight, gameState.cameraY));
 }
 
 function gameLoop() {
@@ -185,8 +193,17 @@ function gameLoop() {
         if (elapsed >= 5000) {
             gameState.transitioningToShowtime = false;
             gameState.showtime = true;
-            gameState.player.x = gameState.backgroundImage.width / 2;
-            gameState.player.y = gameState.backgroundImage.height / 2;
+            // 쇼타임 시 플레이어 위치를 원본 이미지 중앙으로 설정
+            gameState.player.x = gameState.originalBackgroundImage.width / 2;
+            gameState.player.y = gameState.originalBackgroundImage.height / 2;
+            
+            // 쇼타임 시 카메라 크기를 원본 이미지 크기로 설정
+            gameState.cameraWidth = canvas.width;
+            gameState.cameraHeight = canvas.height;
+            gameState.currentWorldWidth = gameState.originalBackgroundImage.width;
+            gameState.currentWorldHeight = gameState.originalBackgroundImage.height;
+            gameState.cameraX = gameState.player.x - canvas.width / 2;
+            gameState.cameraY = gameState.player.y - canvas.height / 2;
             
             showtimeGuideDiv.style.display = 'block';
             countdownDiv.style.display = 'block';
@@ -203,6 +220,7 @@ function gameLoop() {
         }
     } else if (gameState.showtime) {
         movePlayer(gameState);
+        updateCameraPosition(gameState); // 쇼타임 시 카메라 위치 업데이트
     } else if (gameState.gameRunning) {
         movePlayer(gameState);
         updateCameraPosition(gameState); // 카메라 위치 업데이트
@@ -255,6 +273,18 @@ async function loadImage(src) {
     });
 }
 
+// 이미지를 리사이즈하지 않고 원본 크기 그대로 로드하는 유틸리티 함수
+async function loadOriginalImage(src) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+            resolve(img);
+        };
+        img.onerror = reject;
+        img.src = getCacheBustedUrl(src);
+    });
+}
+
 // 랜덤 스테이지 번호를 얻는 함수
 function getRandomStageNumber(exclude = null) {
     let randomStage;
@@ -274,6 +304,7 @@ async function preloadNextStageImage() {
     
     try {
         gameState.nextBackgroundImage = await loadImage(nextImageSrc);
+        gameState.nextOriginalBackgroundImage = await loadOriginalImage(nextImageSrc); // 원본 이미지 로드
         gameState.nextImageSrc = nextImageSrc;
         console.log('Next stage image preloaded:', nextImageSrc);
     } catch (error) {
@@ -316,6 +347,7 @@ async function populateStageSelection() {
         const path = `stages/${randomStage}.jpg`;
         try {
             gameState.nextBackgroundImage = await loadImage(path);
+            gameState.nextOriginalBackgroundImage = await loadOriginalImage(path); // 원본 이미지 로드
             gameState.nextImageSrc = path;
             console.log('Initial stage image preloaded:', path);
         } catch (error) {
@@ -355,6 +387,7 @@ function startGame(imageSrc) {
     // 미리 로드된 이미지가 있으면 사용
     if (gameState.nextBackgroundImage && gameState.nextImageSrc === imageSrc) {
         gameState.backgroundImage = gameState.nextBackgroundImage;
+        gameState.originalBackgroundImage = gameState.nextOriginalBackgroundImage; // 원본 이미지 할당
         gameState.currentImageSrc = imageSrc;
     } else {
         // 미리 로드된 이미지가 없거나 다른 이미지인 경우 새로 로드
@@ -365,6 +398,12 @@ function startGame(imageSrc) {
             initGame();
         };
         img.src = getCacheBustedUrl(imageSrc);
+        
+        const originalImg = new Image();
+        originalImg.onload = () => {
+            gameState.originalBackgroundImage = originalImg;
+        };
+        originalImg.src = getCacheBustedUrl(imageSrc);
         return;
     }
 
@@ -386,6 +425,7 @@ async function startNextStage() {
     // 미리 로드된 이미지를 현재 스테이지 이미지로 사용
     if (gameState.nextBackgroundImage) {
         gameState.backgroundImage = gameState.nextBackgroundImage;
+        gameState.originalBackgroundImage = gameState.nextOriginalBackgroundImage; // 원본 이미지 할당
         gameState.currentImageSrc = gameState.nextImageSrc;
         
         // 다음 스테이지를 위한 이미지 다시 미리 로드
@@ -393,6 +433,10 @@ async function startNextStage() {
         
         // 난이도 조절: 시간을 2초 줄이되, 32초 밑으로 내려가지 않음
         gameState.stageStartTime = Math.max(32, gameState.stageStartTime - 2);
+
+        // 게임 세계 크기를 원래대로 되돌림
+        gameState.currentWorldWidth = VIRTUAL_WORLD_WIDTH;
+        gameState.currentWorldHeight = VIRTUAL_WORLD_HEIGHT;
 
         resetDifficultyStats();
         initGame();
