@@ -6,7 +6,7 @@ import { render, gameOver, showBossMessage, showInvincibleMessage, showInvincibi
 import { updateClaimedSet, isAreaClaimed } from './area.js';
 import { canvas, ctx, COLS, ROWS } from './context.js';
 import { difficulty, ENEMY_INCREMENT, setDifficulty, resetDifficultyStats } from './difficulty.js';
-import { ITEM_SPAWN_INTERVAL, ITEM_SIZE, GRID_SIZE, SPEED_UP_DURATION, VIRTUAL_WORLD_WIDTH, VIRTUAL_WORLD_HEIGHT, PLAYER_SIZE } from './config.js';
+import { ITEM_SPAWN_INTERVAL, ITEM_SIZE, GRID_SIZE, SPEED_UP_DURATION, VIRTUAL_WORLD_WIDTH, VIRTUAL_WORLD_HEIGHT, PLAYER_SIZE, INITIAL_PLAYER_HEALTH, PLAYER_INVINCIBILITY_DURATION, HEALTH_PER_LEVEL, XP_NEEDED_BASE, XP_NEEDED_MULTIPLIER } from './config.js';
 
 const stageSelectDiv = document.getElementById('stage-select');
 const gameContainerDiv = document.querySelector('.game-container');
@@ -14,8 +14,21 @@ const showtimeGuideDiv = document.getElementById('showtime-guide');
 const countdownDiv = document.getElementById('countdown');
 const restartButton = document.getElementById('restartButton');
 
+
+
 let gameState = {
-    player: { x: 0, y: 0, trail: [] },
+    player: { 
+        x: 0, 
+        y: 0, 
+        trail: [],
+        health: INITIAL_PLAYER_HEALTH,
+        maxHealth: INITIAL_PLAYER_HEALTH,
+        invincible: false,
+        invincibleTimer: 0,
+        invincibleDuration: PLAYER_INVINCIBILITY_DURATION,
+        level: 1,
+        experience: 0
+    },
     enemies: [],
     claimedArea: [],
     lives: 3,
@@ -26,8 +39,6 @@ let gameState = {
     transitionStartTime: 0,
     showtimeIntervalId: null,
     showtimeCountdown: 10,
-    gameTimerId: null,
-    timeLeft: 60,
     keys: {},
     backgroundImage: null,
     originalBackgroundImage: null, // 원본 크기 배경 이미지
@@ -46,8 +57,9 @@ let gameState = {
     isGameOverAnimation: false,
     gameOverStartTime: null,
     stageCount: 0,              // 전체 스테이지 수를 저장
+    enemiesDefeatedCount: 0,    // 처치한 적의 수
+    bossSpawnThreshold: 5,      // 보스 등장에 필요한 적 처치 수 (예시)
     bossSpawned: false,
-    stageStartTime: 120,
     speedUpItem: null,
     speedUpSpawnTimerId: null,
     speedUpEffectTimerId: null,
@@ -60,15 +72,25 @@ let gameState = {
     currentWorldHeight: VIRTUAL_WORLD_HEIGHT // 현재 게임 세계의 높이
 };
 
-function initGame() {
+function initGame(initialLevel = 1, initialExperience = 0, initialHealth = INITIAL_PLAYER_HEALTH, initialMaxHealth = INITIAL_PLAYER_HEALTH) {
     if (gameState.animationFrameId) {
         cancelAnimationFrame(gameState.animationFrameId);
     }
 
-    gameState.player = { x: 0, y: 0, trail: [] };
+    gameState.player = {
+        x: 0,
+        y: 0,
+        trail: [],
+        health: initialHealth,
+        maxHealth: initialMaxHealth,
+        invincible: false,
+        invincibleTimer: 0,
+        invincibleDuration: PLAYER_INVINCIBILITY_DURATION,
+        level: initialLevel,
+        experience: initialExperience
+    };
     gameState.enemies = [];
     gameState.claimedArea = [];
-    gameState.lives = difficulty.PLAYER_LIVES;
     gameState.score = 0;
     gameState.gameRunning = true;
     gameState.isGameOver = false;
@@ -81,6 +103,8 @@ function initGame() {
     gameState.isGameOverAnimation = false;
     gameState.gameOverStartTime = null;
     gameState.bossSpawned = false;
+    gameState.enemiesDefeatedCount = 0; // 초기화
+    gameState.bossSpawnThreshold = 5; // 초기 보스 등장 임계값 (조절 가능)
     gameState.speedUpItem = null;
     gameState.isPlayerSpeedBoosted = false;
     gameState.cameraX = gameState.player.x - gameState.cameraWidth / 2;
@@ -112,23 +136,6 @@ function initGame() {
         clearInterval(gameState.showtimeIntervalId);
         gameState.showtimeIntervalId = null;
     }
-    if (gameState.gameTimerId) {
-        clearInterval(gameState.gameTimerId);
-    }
-    gameState.timeLeft = gameState.stageStartTime;
-    gameState.gameTimerId = setInterval(() => {
-        if (!gameState.gameRunning) return; // 게임이 실행 중이 아닐 경우 아무것도 하지 않음
-
-        gameState.timeLeft--;
-        if (gameState.timeLeft === 60 && !gameState.bossSpawned) {
-            const boss = createBoss();
-            if (boss) {
-                gameState.enemies.push(boss);
-                showBossMessage();
-                gameState.bossSpawned = true;
-            }
-        }
-    }, 1000);
 
     gameState.keys = {};
 
@@ -183,6 +190,10 @@ function updateCameraPosition(gameState) {
     gameState.cameraY = Math.max(0, Math.min(gameState.currentWorldHeight - cameraHeight, gameState.cameraY));
 }
 
+function getXPForNextLevel(level) {
+    return Math.floor(XP_NEEDED_BASE * (XP_NEEDED_MULTIPLIER ** (level - 1)));
+}
+
 function gameLoop() {
     if (!gameState.gameRunning && !gameState.showtime && !gameState.transitioningToShowtime && !gameState.isGameOverAnimation) {
         return;
@@ -225,15 +236,34 @@ function gameLoop() {
         movePlayer(gameState);
         updateCameraPosition(gameState); // 카메라 위치 업데이트
         moveEnemies(gameState.enemies, gameState);
-        checkCollisions(gameState);
 
-        if (gameState.isGameOver && !gameState.isGameOverAnimation) {
+        // 플레이어가 무적 상태가 아닐 때만 충돌 검사
+        if (!gameState.player.invincible) {
+            checkCollisions(gameState);
+        }
+
+        // 무적 타이머 업데이트
+        if (gameState.player.invincible) {
+            gameState.player.invincibleTimer -= (1 / 60); // 60 FPS 기준, 초 단위로 감소
+            if (gameState.player.invincibleTimer <= 0) {
+                gameState.player.invincible = false; // 무적 상태 해제
+                gameState.player.invincibleTimer = 0;
+                console.log("Player invincibility ended."); // 디버그용 로그
+            }
+        }
+
+        if (gameState.player.health <= 0 && !gameState.isGameOverAnimation) {
             gameOver(gameState);
         }
 
-        if (gameState.timeLeft <= 0) {
-            returnToStageSelect();
-            return;
+        // 레벨업 체크
+        const xpNeeded = getXPForNextLevel(gameState.player.level);
+        if (gameState.player.experience >= xpNeeded) {
+            gameState.player.level++;
+            gameState.player.experience -= xpNeeded; // 초과 경험치는 다음 레벨로 이월
+            gameState.player.maxHealth += HEALTH_PER_LEVEL; // 최대 체력 증가
+            gameState.player.health = gameState.player.maxHealth; // 체력 회복
+            console.log(`Level Up! New Level: ${gameState.player.level}, Max Health: ${gameState.player.maxHealth}`);
         }
 
         if (gameState.enemies.length === 0 || gameState.forceWin) {
@@ -410,7 +440,8 @@ function startGame(imageSrc) {
     // 다음 스테이지를 위한 이미지 미리 로드
     preloadNextStageImage();
     
-    initGame();
+    // 게임 시작 시 레벨과 경험치를 초기화 (새 게임 시작이므로)
+    initGame(1, 0);
 }
 
 async function startNextStage() {
@@ -431,15 +462,13 @@ async function startNextStage() {
         // 다음 스테이지를 위한 이미지 다시 미리 로드
         preloadNextStageImage();
         
-        // 난이도 조절: 시간을 2초 줄이되, 32초 밑으로 내려가지 않음
-        gameState.stageStartTime = Math.max(32, gameState.stageStartTime - 2);
-
         // 게임 세계 크기를 원래대로 되돌림
         gameState.currentWorldWidth = VIRTUAL_WORLD_WIDTH;
         gameState.currentWorldHeight = VIRTUAL_WORLD_HEIGHT;
 
         resetDifficultyStats();
-        initGame();
+        // 현재 플레이어의 레벨과 경험치를 다음 스테이지로 전달
+        initGame(gameState.player.level, gameState.player.experience, gameState.player.health, gameState.player.maxHealth);
     }
 }
 
@@ -461,11 +490,6 @@ function returnToStageSelect() {
         cancelAnimationFrame(gameState.animationFrameId);
         gameState.animationFrameId = null;
     }
-    if (gameState.gameTimerId) {
-        clearInterval(gameState.gameTimerId);
-        gameState.gameTimerId = null;
-    }
-    gameState.stageStartTime = 60; // 시간 초기화
     resetDifficultyStats();
 }
 

@@ -1,7 +1,8 @@
 import { canvas, COLS, ROWS } from './context.js';
-import { GRID_SIZE, TRAPPED_AREA_THRESHOLD, TRAP_ENEMY_SCORE, TIME_BONUS_PER_TRAP } from './config.js';
+import { GRID_SIZE, TRAPPED_AREA_THRESHOLD, TRAP_ENEMY_SCORE, XP_SIMPLE_ENEMY, XP_NORMAL_ENEMY, XP_BOSS_ENEMY } from './config.js';
 import { ENEMY_TYPE } from './enemy.js';
-import { showInvincibleMessage, showEnemyDefeatedMessage } from './ui.js';
+import { createBoss } from './enemy.js';
+import { showInvincibleMessage, showEnemyDefeatedMessage, showBossMessage } from './ui.js';
 
 let claimedSet = new Set();
 
@@ -189,7 +190,37 @@ function checkTrappedEnemies(gameState) {
 
         gameState.enemies = gameState.enemies.filter(e => !enemiesToRemove.includes(e));
         gameState.score += TRAP_ENEMY_SCORE * enemiesToRemove.length;
-        gameState.timeLeft += TIME_BONUS_PER_TRAP * enemiesToRemove.length;
+        
+        // 적 타입별 경험치 부여
+        enemiesToRemove.forEach(enemy => {
+            let xpGained = 0;
+            switch (enemy.type) {
+                case ENEMY_TYPE.SIMPLE:
+                    xpGained = XP_SIMPLE_ENEMY;
+                    break;
+                case ENEMY_TYPE.NORMAL:
+                    xpGained = XP_NORMAL_ENEMY;
+                    break;
+                case ENEMY_TYPE.BOSS:
+                    xpGained = XP_BOSS_ENEMY;
+                    break;
+            }
+            gameState.player.experience += xpGained;
+        });
+
+        gameState.enemiesDefeatedCount += enemiesToRemove.length; // 처치한 적 수 증가
+
+        // 보스 등장 조건 확인
+        if (!gameState.bossSpawned && gameState.enemiesDefeatedCount >= gameState.bossSpawnThreshold) {
+            const boss = createBoss();
+            if (boss) {
+                gameState.enemies.push(boss);
+                showBossMessage();
+                gameState.bossSpawned = true;
+                gameState.enemiesDefeatedCount = 0; // 보스 등장 후 카운트 초기화
+                gameState.bossSpawnThreshold += 5; // 다음 보스 등장 임계값 증가 (예시)
+            }
+        }
         showEnemyDefeatedMessage(); // 적 처치 메시지 표시
     }
 }
@@ -301,7 +332,6 @@ function checkAndRemoveStuckEnemies(gameState) {
 
         gameState.enemies = gameState.enemies.filter(e => !enemiesToRemove.includes(e));
         gameState.score += TRAP_ENEMY_SCORE * enemiesToRemove.length;
-        gameState.timeLeft += TIME_BONUS_PER_TRAP * enemiesToRemove.length;
         showEnemyDefeatedMessage(); // 적 처치 메시지 표시
     }
 }

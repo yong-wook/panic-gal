@@ -24,6 +24,13 @@ const ENEMY_SIZES = {
     [ENEMY_TYPE.BOSS]: 30
 };
 
+// 적 타입별 피해량 정의
+const ENEMY_DAMAGES = {
+    [ENEMY_TYPE.SIMPLE]: 10,  // 단순 적은 10의 피해
+    [ENEMY_TYPE.NORMAL]: 25,  // 일반 적은 25의 피해
+    [ENEMY_TYPE.BOSS]: 50     // 보스는 50의 피해
+};
+
 function getRandomEnemyType() {
     const rand = Math.random();
     const normalRatio = difficulty.ENEMY_TYPES.NORMAL / (difficulty.ENEMY_TYPES.SIMPLE + difficulty.ENEMY_TYPES.NORMAL);
@@ -46,6 +53,7 @@ export function createEnemy() {
         size: ENEMY_SIZES[type],
         color: ENEMY_COLORS[type],
         type,
+        damage: ENEMY_DAMAGES[type], // <-- 피해량 추가
         baseSpeed,
         lastDirectionChange: 0
     };
@@ -84,6 +92,7 @@ export function createBoss() {
         size: ENEMY_SIZES[type],
         color: ENEMY_COLORS[type],
         type,
+        damage: ENEMY_DAMAGES[type], // <-- 피해량 추가
         baseSpeed,
         lastDirectionChange: 0
     };

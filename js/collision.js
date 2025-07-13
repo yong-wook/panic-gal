@@ -2,34 +2,12 @@ import { GRID_SIZE, ITEM_SIZE, PLAYER_SIZE } from './config.js';
 import { ENEMY_TYPE } from './enemy.js';
 import { isAreaClaimed } from './area.js';
 import { applySpeedUpEffect } from './main.js';
-import { showInvincibleMessage, showInvincibilityEndMessage, showLifeLostMessage } from './ui.js';
-
-function handleCollision(gameState) {
-    if (gameState.isInvincible) return; // 무적 상태면 충돌 무시
-    
-    gameState.lives--;
-    showLifeLostMessage(); // 생명력 감소 메시지 표시
-    if (gameState.lives <= 0) {
-        gameState.isGameOver = true;
-    } else {
-        // Reset player trail and position after a collision
-        gameState.player.trail = [];
-        // Optionally, reset player to a safe position, e.g., top-left corner
-        gameState.player.x = 0;
-        gameState.player.y = 0;
-    }
-}
+import { showInvincibleMessage, showInvincibilityEndMessage } from './ui.js';
 
 export function checkCollisions(gameState) {
     if (gameState.isGameOver) return;
 
-    // 무적 상태 체크
-    if (gameState.isInvincible && Date.now() - gameState.invincibleStartTime >= gameState.invincibleDuration) {
-        console.log('무적 상태 종료');
-        gameState.isInvincible = false;
-        gameState.invincibleStartTime = null;
-        showInvincibilityEndMessage();
-    }
+    // 플레이어의 무적 상태는 main.js에서 관리하므로 여기서는 별도로 체크하지 않음
 
     // 보스와의 충돌 체크를 위한 배열 복사
     const enemies = [...gameState.enemies];
@@ -42,12 +20,29 @@ export function checkCollisions(gameState) {
 
         // 플레이어와의 직접 충돌 체크
         if (distance < enemy.size + 4) {
-            if (gameState.player.trail.length > 0) {
-                handleCollision(gameState);
+            // 플레이어가 선을 긋는 중이거나, 이미 점령된 영역이 아닌 곳에 있을 때만 피해를 입음
+            if (gameState.player.trail.length > 0 || !isAreaClaimed(Math.floor(gameState.player.x / GRID_SIZE), Math.floor(gameState.player.y / GRID_SIZE))) {
+                if (!gameState.player.invincible) {
+                    if (enemy.type === ENEMY_TYPE.BOSS) {
+                        gameState.player.health -= Math.ceil(gameState.player.maxHealth / 2); // 최대 체력의 절반 감소
+                    } else {
+                        gameState.player.health -= enemy.damage; // 일반 적은 적의 damage 값만큼 감소
+                    }
+                    gameState.player.invincible = true; // 무적 상태로 전환
+                    gameState.player.invincibleTimer = gameState.player.invincibleDuration; // 무적 타이머 시작
+
+                    if (gameState.player.health <= 0) {
+                        // TODO: 게임 오버 또는 목숨 감소 로직 호출
+                        // 현재는 임시로 콘솔 로그만 남김. 실제 게임 오버 로직은 main.js에서 처리
+                        console.log("Player defeated!"); 
+                        gameState.isGameOver = true; // 게임 오버 상태로 전환
+                    }
+                    console.log(`Player hit! Health: ${gameState.player.health}`); // 디버그용 로그
+                }
             }
         }
 
-        // 이동 경로와의 충돌 체크
+        // 이동 경로와의 충돌 체크 (선을 긋는 도중 적이 선에 닿는 경우)
         gameState.player.trail.forEach(point => {
             const trailX = point.x * GRID_SIZE + GRID_SIZE / 2;
             const trailY = point.y * GRID_SIZE + GRID_SIZE / 2;
@@ -56,8 +51,21 @@ export function checkCollisions(gameState) {
             const trailDistance = Math.sqrt(trailDx * trailDx + trailDy * trailDy);
 
             if (trailDistance < enemy.size + GRID_SIZE / 2) {
-                if (!gameState.isInvincible) {
-                    handleCollision(gameState);
+                if (!gameState.player.invincible) {
+                    if (enemy.type === ENEMY_TYPE.BOSS) {
+                        gameState.player.health -= Math.ceil(gameState.player.maxHealth / 2); // 최대 체력의 절반 감소
+                    } else {
+                        gameState.player.health -= enemy.damage; // 일반 적은 적의 damage 값만큼 감소
+                    }
+                    gameState.player.invincible = true; // 무적 상태로 전환
+                    gameState.player.invincibleTimer = gameState.player.invincibleDuration; // 무적 타이머 시작
+
+                    if (gameState.player.health <= 0) {
+                        console.log("Player defeated by trail collision!");
+                        gameState.isGameOver = true; // 게임 오버 상태로 전환
+                    }
+                    console.log(`Player hit on trail! Health: ${gameState.player.health}`); // 디버그용 로그
+                    gameState.player.trail = []; // 선을 긋는 도중 충돌 시 선 초기화
                 }
             }
         });

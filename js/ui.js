@@ -1,14 +1,13 @@
 import { calculatePercentage } from './area.js';
-import { GRID_SIZE, ITEM_SIZE, ITEM_COLOR, ITEM_TEXT_COLOR, ITEM_FONT, PLAYER_SIZE, VIRTUAL_WORLD_WIDTH, VIRTUAL_WORLD_HEIGHT } from './config.js';
+import { GRID_SIZE, ITEM_SIZE, ITEM_COLOR, ITEM_TEXT_COLOR, ITEM_FONT, PLAYER_SIZE, VIRTUAL_WORLD_WIDTH, VIRTUAL_WORLD_HEIGHT, XP_NEEDED_BASE, XP_NEEDED_MULTIPLIER } from './config.js';
 import { ctx, canvas } from './context.js';
 
 const minimapCanvas = document.getElementById('minimapCanvas');
 const minimapCtx = minimapCanvas.getContext('2d');
 
 const enemiesLeftSpan = document.getElementById('enemiesLeft');
-const livesSpan = document.getElementById('lives');
+const healthSpan = document.getElementById('health');
 const scoreSpan = document.getElementById('score');
-const timerSpan = document.getElementById('timer');
 
 const gameOverDiv = document.getElementById('gameOver');
 const finalScoreSpan = document.getElementById('finalScore');
@@ -43,9 +42,49 @@ const lifeLostMessages = [
 
 export function updateUI(gameState) {
     enemiesLeftSpan.textContent = gameState.enemies.length;
-    livesSpan.textContent = gameState.lives;
     scoreSpan.textContent = gameState.score;
-    timerSpan.textContent = gameState.timeLeft >= 0 ? gameState.timeLeft : 0;
+}
+
+function drawHealthBar(player, ctx) {
+    const barWidth = 100;
+    const barHeight = 10;
+    const x = 10; // 체력 바 위치 (좌측 상단)
+    const y = 10;
+
+    // 배경 바 (최대 체력)
+    ctx.fillStyle = 'gray';
+    ctx.fillRect(x, y, barWidth, barHeight);
+
+    // 현재 체력 바
+    const currentHealthWidth = (player.health / player.maxHealth) * barWidth;
+    ctx.fillStyle = 'red'; // 체력 색상
+    ctx.fillRect(x, y, currentHealthWidth, barHeight);
+
+    // 테두리
+    ctx.strokeStyle = 'black';
+    ctx.strokeRect(x, y, barWidth, barHeight);
+
+    // 텍스트 (선택 사항)
+    ctx.fillStyle = 'white';
+    ctx.font = '8px Arial';
+    ctx.fillText(`${player.health}/${player.maxHealth}`, x + barWidth / 2 - 15, y + barHeight / 2 + 3);
+}
+
+function drawPlayerStats(player, ctx) {
+    const x = 10; // UI 위치 (좌측 하단)
+    const y = canvas.height - 30; // 캔버스 하단에서 30px 위
+
+    ctx.fillStyle = 'white';
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'bottom';
+
+    // XP_NEEDED_BASE와 XP_NEEDED_MULTIPLIER는 config.js에서 가져와야 합니다.
+    // ui.js에서도 config를 import 해야 합니다.
+    // 임시로 값을 사용하지 않고 config에서 가져오도록 수정합니다.
+    const xpNeeded = Math.floor(100 * (1.5 ** (player.level - 1))); // 임시 값 대신 config에서 가져온 값 사용
+    ctx.fillText(`Level: ${player.level}`, x, y);
+    ctx.fillText(`XP: ${player.experience} / ${xpNeeded}`, x, y + 15);
 }
 
 export function gameOver(gameState) {
@@ -219,6 +258,8 @@ function renderGameplay(gameState) {
     });
 
     updateUI(gameState);
+    drawHealthBar(gameState.player, ctx); // 체력 바 그리기
+    drawPlayerStats(gameState.player, ctx); // 플레이어 스탯 그리기
 
     // 아이템 렌더링
     if (gameState.speedUpItem) {
