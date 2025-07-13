@@ -30,6 +30,7 @@ export function checkCollisions(gameState) {
                     }
                     gameState.player.invincible = true; // 무적 상태로 전환
                     gameState.player.invincibleTimer = gameState.player.invincibleDuration; // 무적 타이머 시작
+                    gameState.player.trail = []; // 플레이어가 적과 직접 충돌 시 트레일 초기화
 
                     if (gameState.player.health <= 0) {
                         // TODO: 게임 오버 또는 목숨 감소 로직 호출

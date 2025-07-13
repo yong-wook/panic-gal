@@ -131,6 +131,9 @@ export function claimArea(gameState) {
 
     updateClaimedSet(gameState.claimedArea); 
 
+    // 새로 점령된 트레일 위에 있는 적들을 제거
+    removeEnemiesOnTrail(gameState, gameState.player.trail);
+
     const foundRegions = fillEnclosedAreas(gameState); 
 
     gameState.player.trail = [];
@@ -292,6 +295,59 @@ export function calculatePercentage(claimedArea) {
     if (availableCells <= 0) return 100; // Avoid division by zero or negative available cells
 
     return Math.round((playerClaimedCells / availableCells) * 100);
+}
+
+// 새로 점령된 트레일 위에 있는 적들을 제거하는 함수
+function removeEnemiesOnTrail(gameState, trailPoints) {
+    const enemiesToKeep = [];
+    const trailSet = new Set(trailPoints.map(p => `${p.x},${p.y}`));
+    let enemiesRemoved = false; // 적 제거 여부를 추적하는 플래그
+
+    gameState.enemies.forEach(enemy => {
+        const enemyGridX = Math.floor(enemy.x / GRID_SIZE);
+        const enemyGridY = Math.floor(enemy.y / GRID_SIZE);
+        const enemyKey = `${enemyGridX},${enemyGridY}`;
+
+        if (trailSet.has(enemyKey)) {
+            // 적이 트레일 위에 있으므로 제거
+            console.log(`Enemy of type ${enemy.type} removed from newly claimed trail.`);
+            // TODO: 점수 추가, 효과음 재생 등
+            let xpGained = 0;
+            switch (enemy.type) {
+                case ENEMY_TYPE.SIMPLE:
+                    xpGained = XP_SIMPLE_ENEMY;
+                    break;
+                case ENEMY_TYPE.NORMAL:
+                    xpGained = XP_NORMAL_ENEMY;
+                    break;
+                case ENEMY_TYPE.BOSS:
+                    xpGained = XP_BOSS_ENEMY;
+                    break;
+            }
+            gameState.player.experience += xpGained;
+            gameState.score += TRAP_ENEMY_SCORE; // 트레일 위 적 제거 시 점수 추가
+            gameState.enemiesDefeatedCount++; // 처치한 적 수 증가
+            enemiesRemoved = true; // 적이 제거되었음을 표시
+        } else {
+            enemiesToKeep.push(enemy);
+        }
+    });
+    gameState.enemies = enemiesToKeep;
+
+    // 보스 등장 조건 확인 (트레일 위 적 제거 후)
+    if (!gameState.bossSpawned && gameState.enemiesDefeatedCount >= gameState.bossSpawnThreshold) {
+        const boss = createBoss();
+        if (boss) {
+            gameState.enemies.push(boss);
+            showBossMessage();
+            gameState.bossSpawned = true;
+            gameState.enemiesDefeatedCount = 0; // 보스 등장 후 카운트 초기화
+            gameState.bossSpawnThreshold += 5; // 다음 보스 등장 임계값 증가 (예시)
+        }
+    }
+    if (enemiesRemoved) { // 적이 제거되었다면 메시지 표시
+        showEnemyDefeatedMessage();
+    }
 }
 
 function checkAndRemoveStuckEnemies(gameState) {
